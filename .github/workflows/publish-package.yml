@@ -19,6 +19,6 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Pack
-      run: dotnet pack --configuration Release
+      run: dotnet pack --configuration Release -p:Version=$GITHUB_REF
     - name: Push
       run: dotnet nuget push "**/Release/*.nupkg" --source "github"
