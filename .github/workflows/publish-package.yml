@@ -1,10 +1,4 @@
-name: .NET Core
-
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+name: Publish package
 
 jobs:
   build:
@@ -24,4 +18,4 @@ jobs:
     - name: Pack
       run: dotnet pack --configuration Release
     - name: Push
-      run: dotnet nuget push "**/*.nupkg" --source "github"
+      run: dotnet nuget push "**/Release/*.nupkg" --source "github"
