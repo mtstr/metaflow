@@ -5,7 +5,8 @@ on:
     types: [released,prereleased]
 jobs:
   build:
-
+    env: # Or as an environment variable
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-latest
 
     steps:
@@ -19,6 +20,6 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Pack
-      run: dotnet pack --configuration Release -p:Version=$GITHUB_REF
+      run: dotnet pack --configuration Release -p:Version=${{ github.event.release.tag_name }}
     - name: Push
-      run: dotnet nuget push "**/Release/*.nupkg" --source "github" -k $GITHUB_TOKEN
+      run: dotnet nuget push "**/Release/*.nupkg" --source "github"
