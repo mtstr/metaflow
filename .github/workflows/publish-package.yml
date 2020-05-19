@@ -22,4 +22,4 @@ jobs:
     - name: Pack
       run: dotnet pack --configuration Release -p:Version=$GITHUB_REF
     - name: Push
-      run: dotnet nuget push "**/Release/*.nupkg" --source "github" -k $GITHUB_TOKEN
+      run: dotnet nuget push "**/Release/*.nupkg" --source "github"
