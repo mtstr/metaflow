@@ -5,7 +5,8 @@ on:
     types: [released,prereleased]
 jobs:
   build:
-
+    env: # Or as an environment variable
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-latest
 
     steps:
