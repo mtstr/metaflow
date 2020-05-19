@@ -4,7 +4,6 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>Metaflow</RootNamespace>
     <PackageId>Metaflow.Core</PackageId>
-    <Version>0.1.0</Version>
     <Authors>Metastore Development</Authors>
     <Company>Metastore</Company>
     <PackageDescription>Core types for Metaflow RESTful entities</PackageDescription>
