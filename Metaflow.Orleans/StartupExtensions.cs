@@ -43,6 +43,10 @@ namespace Metaflow.Orleans
                                 {
                                     opts.AdvertisedIPAddress = IPAddress.Loopback;
                                 })
+                                .ConfigureServices(ctx =>
+                                {
+                                    ctx.AddScoped(typeof(IDispatcher<>), typeof(ReflectionDispatcher<>));
+                                })
                                 .AddAzureTableGrainStorageAsDefault(ob =>
                                     ob.Configure<Microsoft.Extensions.Hosting.HostBuilderContext>((o, ctx) =>
                                     {

@@ -3,60 +3,50 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
-using Orleans;
 using Orleans.EventSourcing;
 
 namespace Metaflow.Orleans
 {
-    public interface IRestfulGrain<T> : IRestful<T>, IGrainWithStringKey
-    {
-
-    }
-
     public class RestfulGrain<T> : JournaledGrain<T>, IRestfulGrain<T>
     where T : class, new()
     {
+        private readonly IDispatcher<T> _dispatcher;
+
+        public RestfulGrain(IDispatcher<T> dispatcher)
+        {
+            _dispatcher = dispatcher;
+        }
 
         public Task<T> Get() => Task.FromResult(State);
 
         public async Task<Result<TResource>> Handle<TResource>(MutationRequest request, TResource resource) where TResource : class, new()
         {
             RaiseEvent(new Received<TResource>(request, resource));
-
             await ConfirmEvents();
 
-            Func<MethodInfo, bool> methodPredicate = (MethodInfo mi) =>
-              {
-                  var p = mi.GetParameters().ToList();
-                  return p.Count == 1 && p[0].ParameterType == typeof(TResource);
-              };
-
-
-            var mi = typeof(T).GetMethods().FirstOrDefault(m => m.IsPublic && m.Name.ToUpperInvariant() == request.ToString().ToUpperInvariant() && methodPredicate(m));
-
-            if (mi == null) throw new InvalidOperationException();
-
             Result<TResource> result;
+            object @event;
 
             try
             {
-                ParameterExpression resourceParam = Expression.Parameter(typeof(TResource));
-                MethodCallExpression methodCall = Expression.Call(Expression.Constant(State), mi, resourceParam);
-                ParameterExpression stateParam = Expression.Parameter(typeof(T));
-                var lambda = Expression.Lambda<Func<T, TResource, Result<TResource>>>(methodCall, stateParam, resourceParam).Compile();
+                result = await _dispatcher.Invoke(State, request, resource);
 
-                result = lambda(State, resource);
+                @event = result.OK switch
+                {
 
-                if (result.OK)
-                    RaiseEvent(Succeeded<TResource>(request, result, resource));
-                else
-                    RaiseEvent(new Rejected<TResource>(request, resource));
+                    true => Succeeded<TResource>(request, result, resource),
+                    false => new Rejected<TResource>(request, resource)
+                };
+
             }
             catch (Exception ex)
             {
-                RaiseEvent(new Failed<TResource>(request, resource, ex));
                 result = Result<TResource>.Nok(ex.Message);
+                @event = new Failed<TResource>(request, resource, ex);
             }
+
+            RaiseEvent(@event);
+            await ConfirmEvents();
 
             return result;
         }

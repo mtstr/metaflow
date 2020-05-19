@@ -3,6 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>preview</LangVersion>
+    <PackageId>Metaflow.Orleans</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Metastore Development</Authors>
+    <Company>Metastore</Company>
+    <PackageDescription>Running Metaflow RESTful entities as Orleans grains with ASP.NET Core API</PackageDescription>
+    <RepositoryUrl>https://github.com/mtstr/orleans</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
