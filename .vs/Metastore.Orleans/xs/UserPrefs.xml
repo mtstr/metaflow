@@ -1,0 +1,32 @@
+﻿<Properties StartupConfiguration="{199DB68F-A549-4B29-B9E1-332B93B3B788}|Default">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Metaflow.Orleans.Contracts/Grain.cs">
+    <Files>
+      <File FileName="Metaflow.Orleans.Contracts/Grain.cs" Line="25" Column="6" />
+      <File FileName="Metaflow.Orleans/Metaflow.Orleans.csproj" Line="1" Column="1" />
+      <File FileName="Metaflow.Orleans.Contracts/DomainGrain.cs" Line="9" Column="61" />
+      <File FileName="Metaflow.Core/Class1.cs" Line="1" Column="1" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="Metaflow.Orleans" expanded="True">
+            <Node name="Metaflow" expanded="True">
+              <Node name="Grain.cs" selected="True" />
+            </Node>
+            <Node name="Metaflow.Core" expanded="True" />
+            <Node name="Metaflow.Orleans" expanded="True" />
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.ItemProperties.Metaflow.Core FirstBuild="True" />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.ItemProperties.Metaflow FirstBuild="True" />
+  <MonoDevelop.Ide.ItemProperties.Metaflow.Orleans PreferredExecutionTarget="/Applications/Safari.app" />
+</Properties>

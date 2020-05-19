@@ -1,0 +1,118 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/Metaflow.csproj": {}
+  },
+  "projects": {
+    "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Core/Metaflow.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Core/Metaflow.Core.csproj",
+        "projectName": "Metaflow.Core",
+        "projectPath": "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Core/Metaflow.Core.csproj",
+        "packagesPath": "/Users/antonshabinskiy/.nuget/packages/",
+        "outputPath": "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Core/obj/",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "/usr/local/share/dotnet/sdk/NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "/Users/antonshabinskiy/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "netstandard2.1"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netstandard2.1": {
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netstandard2.1": {
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "NETStandard.Library": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/5.0.100-preview.3.20216.6/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/Metaflow.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/Metaflow.csproj",
+        "projectName": "Metaflow",
+        "projectPath": "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/Metaflow.csproj",
+        "packagesPath": "/Users/antonshabinskiy/.nuget/packages/",
+        "outputPath": "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "/usr/local/share/dotnet/sdk/NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "/Users/antonshabinskiy/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "netstandard2.1"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netstandard2.1": {
+            "projectReferences": {
+              "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Core/Metaflow.Core.csproj": {
+                "projectPath": "/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Core/Metaflow.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netstandard2.1": {
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "NETStandard.Library": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/5.0.100-preview.3.20216.6/RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

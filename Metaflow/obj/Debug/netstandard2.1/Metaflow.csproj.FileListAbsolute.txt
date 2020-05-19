@@ -1,0 +1,12 @@
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/Debug/netstandard2.1/Metaflow.csprojAssemblyReference.cache
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/Debug/netstandard2.1/Metaflow.AssemblyInfoInputs.cache
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/Debug/netstandard2.1/Metaflow.AssemblyInfo.cs
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/Debug/netstandard2.1/Metaflow.csproj.CoreCompileInputs.cache
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/bin/Debug/netstandard2.1/Metaflow.deps.json
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/bin/Debug/netstandard2.1/Metaflow.dll
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/bin/Debug/netstandard2.1/Metaflow.pdb
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/bin/Debug/netstandard2.1/Metaflow.Core.dll
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/bin/Debug/netstandard2.1/Metaflow.Core.pdb
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/Debug/netstandard2.1/Metaflow.csproj.CopyComplete
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/Debug/netstandard2.1/Metaflow.dll
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow/obj/Debug/netstandard2.1/Metaflow.pdb

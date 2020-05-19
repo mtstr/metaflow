@@ -1,0 +1,10 @@
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Dockerfile
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Metaflow.Orleans.deps.json
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Metaflow.Orleans.dll
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Metaflow.Orleans.pdb
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Metaflow.Core.dll
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Metaflow.dll
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Metaflow.pdb
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/bin/Debug/netcoreapp3.1/Metaflow.Core.pdb
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/obj/Debug/netcoreapp3.1/codegen/Metaflow.Orleans.AssemblyInfoInputs.cache
+/Users/antonshabinskiy/Development/Repos/Metastore/github/orleans/Metaflow.Orleans/obj/Debug/netcoreapp3.1/codegen/Metaflow.Orleans.csproj.CoreCompileInputs.cache
