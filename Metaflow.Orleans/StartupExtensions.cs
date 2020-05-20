@@ -16,7 +16,7 @@ namespace Metaflow.Orleans
 {
     public static class StartupExtensions
     {
-        public static IHostBuilder AddOrleans(this IHostBuilder builder, string clusterName, IEnumerable<Assembly> assemblies)
+        public static IHostBuilder AddOrleans(this IHostBuilder builder, string clusterName)
         {
             builder.UseOrleans((Microsoft.Extensions.Hosting.HostBuilderContext ctx, ISiloBuilder siloBuilder) =>
                             {
@@ -34,10 +34,6 @@ namespace Metaflow.Orleans
                                 .ConfigureApplicationParts(parts =>
                                 {
                                     parts.AddApplicationPart(typeof(IRestfulGrain<>).Assembly);
-                                    // foreach (var a in assemblies)
-                                    // {
-                                    //     parts.AddApplicationPart(a).WithCodeGeneration();
-                                    // }
                                 })
                                 .Configure<EndpointOptions>(opts =>
                                 {
