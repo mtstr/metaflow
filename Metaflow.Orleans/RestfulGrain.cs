@@ -17,7 +17,20 @@ namespace Metaflow.Orleans
             _dispatcher = dispatcher;
         }
 
-        public Task<T> Get() => Task.FromResult(State);
+        public T _readOnlyState;
+
+        public Task<T> Get()
+        {
+            if (_readOnlyState == null) UpdateReadOnlyState();
+
+            return Task.FromResult(_readOnlyState);
+        }
+
+        private void UpdateReadOnlyState()
+        {
+            if (State == null) _readOnlyState = null;
+            _readOnlyState = State.Copy();
+        }
 
         public async Task<Result<TResource>> Handle<TResource>(MutationRequest request, TResource resource) where TResource : class, new()
         {
@@ -33,7 +46,6 @@ namespace Metaflow.Orleans
 
                 @event = result.OK switch
                 {
-
                     true => Succeeded<TResource>(request, result, resource),
                     false => new Rejected<TResource>(request, resource)
                 };
@@ -47,6 +59,7 @@ namespace Metaflow.Orleans
 
             RaiseEvent(@event);
             await ConfirmEvents();
+            UpdateReadOnlyState();
 
             return result;
         }
