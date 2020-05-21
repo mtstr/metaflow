@@ -2,7 +2,6 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.AspNetCore.Mvc.Internal;
 using Microsoft.AspNetCore.Mvc.Routing;
 
 namespace Metaflow.Orleans
@@ -36,10 +35,7 @@ namespace Metaflow.Orleans
                 AttributeRouteModel = new AttributeRouteModel(method)
             };
 
-            s.ActionConstraints.Add(new HttpMethodActionConstraint(method.HttpMethods)
-            {
-
-            });
+            s.ActionConstraints.Add(new HttpMethodActionConstraint(method.HttpMethods));
 
             if (s != null)
             {
