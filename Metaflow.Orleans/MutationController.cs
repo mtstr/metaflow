@@ -26,17 +26,13 @@ namespace Metaflow.Orleans
         [Route("{id}")]
         public virtual async Task<IActionResult> Respond(string id, TArg input, CancellationToken cancellationToken)
         {
-            var grain = _clusterClient.GetGrain<IRestfulGrain<TState>>(id);
+            IRestfulGrain<TState> grain = _clusterClient.GetGrain<IRestfulGrain<TState>>(id);
 
-            var state = await grain.Get();
+            Result<TArg> result = await grain.Handle((MutationRequest)Enum.Parse(typeof(MutationRequest), Request.Method), input);
 
-            if (Request.Method == "GET") return state == null ? NotFound() : (IActionResult)Ok(state);
-            else
-            {
-                Result<TArg> result = await grain.Handle((MutationRequest)Enum.Parse(typeof(MutationRequest), Request.Method), input);
+            TState state = await grain.Get();
 
-                return result.OK ? Ok(result.After) : (IActionResult)BadRequest(result.Reason);
-            }
+            return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Reason);
         }
     }
 
