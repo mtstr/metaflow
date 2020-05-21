@@ -24,7 +24,7 @@ namespace Metaflow.Orleans
 
                                 siloBuilder
                                 .UseLocalhostClustering()
-                                // .UseAzureStorageClustering(opt => opt.ConnectionString = azureStorageConnection)
+                                .UseAzureStorageClustering(opt => opt.ConnectionString = azureStorageConnection)
                                 .Configure<ClusterOptions>(opts =>
                                 {
                                     opts.ClusterId = $"{clusterName}cluster";
@@ -35,10 +35,11 @@ namespace Metaflow.Orleans
                                 {
                                     parts.AddApplicationPart(typeof(IRestfulGrain<>).Assembly);
                                 })
-                                .Configure<EndpointOptions>(opts =>
-                                {
-                                    opts.AdvertisedIPAddress = IPAddress.Loopback;
-                                })
+                                .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
+                                // .Configure<EndpointOptions>(opts =>
+                                // {
+                                //     opts.AdvertisedIPAddress = IPAddress.Loopback;
+                                // })
                                 .ConfigureServices(ctx =>
                                 {
                                     ctx.AddScoped(typeof(IDispatcher<>), typeof(ReflectionDispatcher<>));
