@@ -1,6 +1,6 @@
 namespace Metaflow
 {
-    
+
     public readonly struct Result<TResource>
     {
         public bool OK { get; }
@@ -10,7 +10,10 @@ namespace Metaflow
         public string Reason { get; }
         public StateChange StateChange { get; }
 
-        public static Result<TResource> Ok(StateChange change, TResource before, TResource after) => new Result<TResource>(change, before, after);
+        public static Result<TResource> Created(TResource after) => new Result<TResource>(StateChange.Created, default, after);
+        public static Result<TResource> Replaced(TResource before, TResource after) => new Result<TResource>(StateChange.Replaced, before, after);
+        public static Result<TResource> Deleted(TResource before) => new Result<TResource>(StateChange.Deleted, before, default);
+        public static Result<TResource> Updated(TResource before, TResource after) => new Result<TResource>(StateChange.Updated, before, after);
 
         public static Result<TResource> Nok(string reason) => new Result<TResource>(false, change: StateChange.None, reason: reason);
 
