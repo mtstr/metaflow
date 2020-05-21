@@ -32,7 +32,7 @@ namespace Metaflow.Orleans
             _readOnlyState = State.Copy();
         }
 
-        public async Task<Result<TResource>> Handle<TResource>(MutationRequest request, TResource resource) where TResource : class, new()
+        public async Task<Result<TResource>> Handle<TResource>(MutationRequest request, TResource resource) 
         {
             RaiseEvent(new Received<TResource>(request, resource));
             await ConfirmEvents();
@@ -64,7 +64,7 @@ namespace Metaflow.Orleans
             return result;
         }
 
-        private object Succeeded<TResource>(MutationRequest request, Result<TResource> result, TResource resource) where TResource : class, new()
+        private object Succeeded<TResource>(MutationRequest request, Result<TResource> result, TResource resource) 
         {
             return result.StateChange switch
             {

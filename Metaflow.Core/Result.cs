@@ -1,7 +1,7 @@
 namespace Metaflow
 {
     
-    public readonly struct Result<TResource> where TResource : class, new()
+    public readonly struct Result<TResource>
     {
         public bool OK { get; }
 
@@ -24,8 +24,8 @@ namespace Metaflow
             OK = ok;
             Reason = reason;
             StateChange = change;
-            Before = null;
-            After = null;
+            Before = default;
+            After = default;
         }
     }
 }

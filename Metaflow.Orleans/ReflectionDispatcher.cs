@@ -9,7 +9,7 @@ namespace Metaflow
     public class ReflectionDispatcher<T> : IDispatcher<T>
     where T : class, new()
     {
-        public virtual Task<Result<TResource>> Invoke<TResource>(T owner, MutationRequest request, TResource resource) where TResource : class, new()
+        public virtual Task<Result<TResource>> Invoke<TResource>(T owner, MutationRequest request, TResource resource) 
         {
             Func<MethodInfo, bool> methodPredicate = (MethodInfo mi) =>
               {

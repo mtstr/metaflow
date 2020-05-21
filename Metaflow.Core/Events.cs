@@ -2,7 +2,7 @@ using System;
 
 namespace Metaflow
 {
-    public class Updated<TResource> where TResource : class, new()
+    public class Updated<TResource> 
     {
 
         public Updated(TResource before, TResource after)
@@ -15,7 +15,7 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public class Deleted<TResource> where TResource : class, new()
+    public class Deleted<TResource> 
     {
         public Deleted(TResource before)
         {
@@ -25,7 +25,7 @@ namespace Metaflow
         public TResource Before { get; }
     }
 
-    public class Replaced<TResource> where TResource : class, new()
+    public class Replaced<TResource> 
     {
 
         public Replaced(TResource before, TResource after)
@@ -38,7 +38,7 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public class Created<TResource> where TResource : class, new()
+    public class Created<TResource> 
     {
 
         public Created(TResource after)

@@ -14,7 +14,6 @@ namespace Metaflow.Orleans
     public class MutationController<TState, TRequest, TArg> : Controller
     where TState : class, new()
     where TRequest : HttpMethodAttribute
-    where TArg : class, new()
     {
         private readonly IClusterClient _clusterClient;
 
