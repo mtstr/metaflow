@@ -16,47 +16,6 @@ namespace Metaflow.Orleans
 {
     public static class StartupExtensions
     {
-        public static IHostBuilder AddOrleans(this IHostBuilder builder, string clusterName)
-        {
-            builder.UseOrleans((Microsoft.Extensions.Hosting.HostBuilderContext ctx, ISiloBuilder siloBuilder) =>
-                            {
-                                var azureStorageConnection = ctx.Configuration.GetValue<string>("AzureTable");
-
-                                siloBuilder
-                                .UseAzureStorageClustering(opt => opt.ConnectionString = azureStorageConnection)
-                                .Configure<ClusterOptions>(opts =>
-                                {
-                                    opts.ClusterId = $"{clusterName}cluster";
-                                    opts.ServiceId = $"{clusterName}service";
-                                })
-                                .AddLogStorageBasedLogConsistencyProviderAsDefault()
-                                .ConfigureApplicationParts(parts =>
-                                {
-                                    parts.AddApplicationPart(typeof(IRestfulGrain<>).Assembly);
-                                })
-                                .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
-                                .ConfigureServices(ctx =>
-                                {
-                                    ctx.AddScoped(typeof(IDispatcher<>), typeof(ReflectionDispatcher<>));
-                                })
-                                .AddAzureTableGrainStorageAsDefault(ob =>
-                                    ob.Configure<Microsoft.Extensions.Hosting.HostBuilderContext>((o, ctx) =>
-                                    {
-                                        o.UseJson = true;
-                                        o.ConnectionString = azureStorageConnection;
-                                    }))
-                                .AddSnapshotStorageBasedConsistencyProviderAsDefault((op, name) =>
-                                    {
-                                        // Take snapshot every five events
-                                        op.SnapshotStrategy = strategyInfo => strategyInfo.CurrentConfirmedVersion - strategyInfo.SnapshotVersion >= 5;
-                                        op.UseIndependentEventStorage = false;
-                                    })
-                                    ;
-                            });
-
-            return builder;
-        }
-
         public static IMvcBuilder AddMetaflow(this IMvcBuilder builder,
             ICollection<Type> resourceTypes)
         {
