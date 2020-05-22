@@ -28,7 +28,12 @@ namespace Metaflow.Orleans
         {
             IRestfulGrain<TState> grain = _clusterClient.GetGrain<IRestfulGrain<TState>>(id);
 
-            Result<TArg> result = await grain.Handle((MutationRequest)Enum.Parse(typeof(MutationRequest), Request.Method), input);
+            Result<TArg> result = (MutationRequest)Enum.Parse(typeof(MutationRequest), Request.Method) switch
+            {
+                MutationRequest.PUT => await grain.Put(input),
+                MutationRequest.POST => await grain.Post(input),
+                _ => Result<TArg>.Nok("Invalid action for request")
+            };
 
             TState state = await grain.Get();
 

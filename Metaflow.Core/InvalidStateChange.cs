@@ -20,11 +20,10 @@ namespace Metaflow
         {
         }
 
-        public InvalidStateChange(MutationRequest request, object result, object resource)
+        public InvalidStateChange(MutationRequest request, object result)
         {
             Request = request.ToString();
             Result = result;
-            Resource = resource;
         }
 
         protected InvalidStateChange(SerializationInfo info, StreamingContext context) : base(info, context)
@@ -33,6 +32,5 @@ namespace Metaflow
 
         public string Request { get; }
         public object Result { get; }
-        public object Resource { get; }
     }
 }

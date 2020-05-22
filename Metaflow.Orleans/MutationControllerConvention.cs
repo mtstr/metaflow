@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -27,8 +28,7 @@ namespace Metaflow.Orleans
 
             var template = argType == grainType ? "{id}" : "{id}/" + argType.Name.ToLowerInvariant();
 
-
-            HttpMethodAttribute method = (HttpMethodAttribute) Activator.CreateInstance(requestType, template);
+            HttpMethodAttribute method = (HttpMethodAttribute)Activator.CreateInstance(requestType, template);
 
             var s = new SelectorModel
             {

@@ -14,6 +14,8 @@ namespace Metaflow.Orleans
             builder.ConfigureApplicationPartManager(apm =>
                     {
                         apm.FeatureProviders.Add(new MutationControllerFeatureProvider(typeof(MutationController<,,>), resourceTypes));
+                        apm.FeatureProviders.Add(new DeleteSelfControllerFeatureProvider(typeof(DeleteSelfController<>), resourceTypes));
+                        apm.FeatureProviders.Add(new DeleteControllerFeatureProvider(typeof(DeleteController<,>), resourceTypes));
                         apm.FeatureProviders.Add(new ReadControllerFeatureProvider(typeof(ReadController<>), resourceTypes));
                     });
 

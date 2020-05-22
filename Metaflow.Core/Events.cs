@@ -2,7 +2,7 @@ using System;
 
 namespace Metaflow
 {
-    public class Updated<TResource> 
+    public class Updated<TResource>
     {
 
         public Updated(TResource before, TResource after)
@@ -15,7 +15,7 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public class Deleted<TResource> 
+    public class Deleted<TResource>
     {
         public Deleted(TResource before)
         {
@@ -25,7 +25,7 @@ namespace Metaflow
         public TResource Before { get; }
     }
 
-    public class Replaced<TResource> 
+    public class Replaced<TResource>
     {
 
         public Replaced(TResource before, TResource after)
@@ -38,7 +38,7 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public class Created<TResource> 
+    public class Created<TResource>
     {
 
         public Created(TResource after)
@@ -53,11 +53,13 @@ namespace Metaflow
     public class Rejected<TResource>
     {
         public string Request { get; }
+        public string ResourceType { get; }
         public TResource Resource { get; }
 
         public Rejected(MutationRequest request, TResource resource)
         {
             Request = request.ToString();
+            ResourceType = typeof(TResource).Name;
             Resource = resource;
         }
     }
@@ -65,12 +67,14 @@ namespace Metaflow
     public class Failed<TResource>
     {
         public string Request { get; }
+        public string ResourceType { get; }
         public TResource Resource { get; }
         public Exception Exception { get; }
 
         public Failed(MutationRequest request, TResource resource, Exception ex)
         {
             Request = request.ToString();
+            ResourceType = typeof(TResource).Name;
             Resource = resource;
             Exception = ex;
         }
@@ -79,11 +83,14 @@ namespace Metaflow
     public class Received<TResource>
     {
         public string Request { get; }
+        public string ResourceType { get; }
+
         public TResource Resource { get; }
 
         public Received(MutationRequest request, TResource resource)
         {
             Request = request.ToString();
+            ResourceType = typeof(TResource).Name;
             Resource = resource;
         }
     }

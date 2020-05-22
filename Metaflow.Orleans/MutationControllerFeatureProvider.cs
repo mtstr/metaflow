@@ -44,27 +44,45 @@ namespace Metaflow.Orleans
             }
         }
 
-        private Dictionary<string, Type> RequestTypes = new Dictionary<string, Type>()
-        {
-            ["Put"] = typeof(HttpPutAttribute),
-            ["Patch"] = typeof(HttpPutAttribute),
-            ["Delete"] = typeof(HttpPutAttribute),
-            ["Post"] = typeof(HttpPutAttribute)
-        };
 
         private List<(Type, Type)> GetRequestForEntity(Type entityType)
         {
-            var requests = entityType.GetMethods().Where(mi => mi.IsPublic && RequestTypes.Keys.Contains(mi.Name) && mi.GetParameters().ToList().Count == 1).Select(mi => ToRequest(mi)).ToList();
+            var methods = entityType.GetMethods().Where(mi => mi.IsPublic).ToList();
 
-            return requests;
+            List<(Type, Type)> result = new List<(Type, Type)>();
+            Action a = () => { };
+
+            foreach (var m in methods)
+            {
+                var p = m.GetParameters().ToList();
+                var t = m.Name.ToUpperInvariant() switch
+                {
+                    "PUT" when p.Count == 1 => AsPut(p),
+                    "POST" when p.Count == 1 => AsPost(p),
+                    _ => (null, null)
+                };
+
+                if (t != (null, null)) result.Add(t);
+            }
+
+            return result;
         }
 
-        private (Type, Type) ToRequest(MethodInfo mi)
+        private static (Type, Type ParameterType) AsPost(List<ParameterInfo> parameters)
         {
-            var args = mi.GetParameters().ToList();
-
-            return (RequestTypes[mi.Name], args.First().ParameterType);
+            return (typeof(HttpPostAttribute), parameters[0].ParameterType);
         }
+
+        private static (Type, Type) AsDelete(MethodInfo m)
+        {
+            return (typeof(HttpDeleteAttribute), m.GetGenericArguments().First());
+        }
+
+        private static (Type, Type ParameterType) AsPut(List<ParameterInfo> parameters)
+        {
+            return (typeof(HttpPutAttribute), parameters[0].ParameterType);
+        }
+
 
         private static Type BuildClosedGenericControllerType(Type openControllerType, Type grainType, Type requestType, Type argType)
         {

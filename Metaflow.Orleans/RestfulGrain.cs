@@ -32,7 +32,7 @@ namespace Metaflow.Orleans
             _readOnlyState = State.Copy();
         }
 
-        public async Task<Result<TResource>> Handle<TResource>(MutationRequest request, TResource resource) 
+        private async Task<Result<TResource>> Handle<TResource>(MutationRequest request, TResource resource)
         {
             RaiseEvent(new Received<TResource>(request, resource));
             await ConfirmEvents();
@@ -42,14 +42,13 @@ namespace Metaflow.Orleans
 
             try
             {
-                result = await _dispatcher.Invoke(State, request, resource);
+                result = await _dispatcher.Invoke<TResource>(State, request, resource);
 
                 @event = result.OK switch
                 {
-                    true => Succeeded<TResource>(request, result, resource),
+                    true => Succeeded<TResource>(request, result),
                     false => new Rejected<TResource>(request, resource)
                 };
-
             }
             catch (Exception ex)
             {
@@ -64,7 +63,7 @@ namespace Metaflow.Orleans
             return result;
         }
 
-        private object Succeeded<TResource>(MutationRequest request, Result<TResource> result, TResource resource) 
+        private object Succeeded<TResource>(MutationRequest request, Result<TResource> result)
         {
             return result.StateChange switch
             {
@@ -72,8 +71,29 @@ namespace Metaflow.Orleans
                 StateChange.Replaced => new Replaced<TResource>(result.Before, result.After),
                 StateChange.Deleted => new Deleted<TResource>(result.Before),
                 StateChange.Updated => new Updated<TResource>(result.Before, result.After),
-                _ => throw new InvalidStateChange(request, result, resource)
+                _ => throw new InvalidStateChange(request, result)
             };
+        }
+
+        public Task<Result<TResource>> Put<TResource>(TResource resource)
+        {
+            return Handle<TResource>(MutationRequest.PUT, resource);
+        }
+
+        public Task<Result<T>> Delete()
+        {
+            return Handle<T>(MutationRequest.DELETE, null);
+
+        }
+
+        public Task<Result<TResource>> Delete<TResource>(TResource resource)
+        {
+            return Handle<TResource>(MutationRequest.DELETE, resource);
+        }
+
+        public Task<Result<TResource>> Post<TResource>(TResource resource)
+        {
+            return Handle<TResource>(MutationRequest.POST, resource);
         }
     }
 }
