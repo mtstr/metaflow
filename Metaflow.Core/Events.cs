@@ -50,48 +50,48 @@ namespace Metaflow
     }
 
 
-    public class Rejected<TResource>
+    public class Rejected<TResource,TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
-        public TResource Resource { get; }
+        public TInput Input { get; }
 
-        public Rejected(MutationRequest request, TResource resource)
+        public Rejected(MutationRequest request, TInput input)
         {
             Request = request.ToString();
             ResourceType = typeof(TResource).Name;
-            Resource = resource;
+            Input = input;
         }
     }
 
-    public class Failed<TResource>
+    public class Failed<TResource,TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
-        public TResource Resource { get; }
+        public TInput Input { get; }
         public Exception Exception { get; }
 
-        public Failed(MutationRequest request, TResource resource, Exception ex)
+        public Failed(MutationRequest request, TInput input, Exception ex)
         {
             Request = request.ToString();
             ResourceType = typeof(TResource).Name;
-            Resource = resource;
+            Input = input;
             Exception = ex;
         }
     }
 
-    public class Received<TResource>
+    public class Received<TResource,TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
 
-        public TResource Resource { get; }
+        public TInput Input { get; }
 
-        public Received(MutationRequest request, TResource resource)
+        public Received(MutationRequest request, TInput input)
         {
             Request = request.ToString();
             ResourceType = typeof(TResource).Name;
-            Resource = resource;
+            Input = input;
         }
     }
 }

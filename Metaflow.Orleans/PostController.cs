@@ -7,21 +7,21 @@ using Orleans;
 
 namespace Metaflow.Orleans
 {
-
     [DefaultActionConvention]
-    public class DeleteController<TGrain, TResource> : GrainController<TGrain, TResource>
+    public class PostController<TGrain, TResource> : GrainController<TGrain, TResource>
     where TGrain : class, new()
     {
-        public DeleteController(IClusterClient clusterClient):base(clusterClient)
+
+        public PostController(IClusterClient clusterClient) : base(clusterClient)
         {
         }
 
-        [HttpDelete(DefaultActionConvention.DefaultRoute)]
-        public virtual async Task<IActionResult> Delete(string id, TResource resource, CancellationToken cancellationToken)
+        [HttpPost(DefaultActionConvention.DefaultRoute)]
+        public virtual async Task<IActionResult> Respond(string id, TResource input, CancellationToken cancellationToken)
         {
             var grain = GetGrain(id);
-
-            var result = await grain.Delete<TResource>(resource);
+            
+            Result<TResource> result = await grain.Post(input);
 
             TGrain state = await grain.Get();
 

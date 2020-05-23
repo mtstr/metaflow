@@ -4,6 +4,6 @@ namespace Metaflow
 {
     public interface IDispatcher<T>
     {
-        Task<Result<TResource>> Invoke<TResource>(T owner, MutationRequest request, TResource resource) ;
+        Task<Result<TResource>> Invoke<TResource,TInput>(T owner, MutationRequest request, TInput input) ;
     }
 }

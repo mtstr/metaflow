@@ -7,26 +7,18 @@ using Orleans;
 
 namespace Metaflow.Orleans
 {
-
-    [Route("[controller]")]
-    [ReadControllerConvention]
-    [ApiController]
-    public class ReadController<TState> : Controller
+    public class GetController<TState> : GrainController<TState, TState>
     where TState : class, new()
     {
-        private readonly IClusterClient _clusterClient;
 
-        public ReadController(IClusterClient clusterClient)
+        public GetController(IClusterClient clusterClient) : base(clusterClient)
         {
-            _clusterClient = clusterClient;
         }
 
         [HttpGet("{id}")]
         public virtual async Task<IActionResult> Get(string id, CancellationToken cancellationToken)
         {
-            var grain = _clusterClient.GetGrain<IRestfulGrain<TState>>(id);
-
-            var state = await grain.Get();
+            var state = await GetGrain(id).Get();
 
             return state == null ? NotFound() : (IActionResult)Ok(state);
         }

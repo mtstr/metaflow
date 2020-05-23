@@ -7,6 +7,18 @@ using Orleans.EventSourcing;
 
 namespace Metaflow.Orleans
 {
+    public class CustomRequest<TResource, TInput>
+    {
+        public MutationRequest Request { get; }
+        public TInput Input { get; }
+
+        public CustomRequest(MutationRequest request, TInput input)
+        {
+            Request = request;
+            Input = input;
+        }
+    }
+
     public class RestfulGrain<T> : JournaledGrain<T>, IRestfulGrain<T>
     where T : class, new()
     {
@@ -32,9 +44,9 @@ namespace Metaflow.Orleans
             _readOnlyState = State.Copy();
         }
 
-        private async Task<Result<TResource>> Handle<TResource>(MutationRequest request, TResource resource)
+        private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
         {
-            RaiseEvent(new Received<TResource>(request, resource));
+            RaiseEvent(new Received<TResource, TInput>(request, input));
             await ConfirmEvents();
 
             Result<TResource> result;
@@ -42,18 +54,18 @@ namespace Metaflow.Orleans
 
             try
             {
-                result = await _dispatcher.Invoke<TResource>(State, request, resource);
+                result = await _dispatcher.Invoke<TResource, TInput>(State, request, input);
 
                 @event = result.OK switch
                 {
                     true => Succeeded<TResource>(request, result),
-                    false => new Rejected<TResource>(request, resource)
+                    false => new Rejected<TResource, TInput>(request, input)
                 };
             }
             catch (Exception ex)
             {
                 result = Result<TResource>.Nok(ex.Message);
-                @event = new Failed<TResource>(request, resource, ex);
+                @event = new Failed<TResource, TInput>(request, input, ex);
             }
 
             RaiseEvent(@event);
@@ -77,23 +89,28 @@ namespace Metaflow.Orleans
 
         public Task<Result<TResource>> Put<TResource>(TResource resource)
         {
-            return Handle<TResource>(MutationRequest.PUT, resource);
+            return Handle<TResource, TResource>(MutationRequest.PUT, resource);
         }
 
         public Task<Result<T>> Delete()
         {
-            return Handle<T>(MutationRequest.DELETE, null);
+            return Handle<T, T>(MutationRequest.DELETE, null);
 
         }
 
         public Task<Result<TResource>> Delete<TResource>(TResource resource)
         {
-            return Handle<TResource>(MutationRequest.DELETE, resource);
+            return Handle<TResource, TResource>(MutationRequest.DELETE, resource);
         }
 
         public Task<Result<TResource>> Post<TResource>(TResource resource)
         {
-            return Handle<TResource>(MutationRequest.POST, resource);
+            return Handle<TResource, TResource>(MutationRequest.POST, resource);
+        }
+
+        public Task<Result<TResource>> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request)
+        {
+            return Handle<TResource, TInput>(request.Request, request.Input);
         }
     }
 }

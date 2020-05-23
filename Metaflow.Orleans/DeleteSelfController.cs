@@ -7,26 +7,18 @@ using Orleans;
 
 namespace Metaflow.Orleans
 {
-
-    [Route("[controller]")]
-    [DeleteSelfControllerConvention]
-    [ApiController]
-    public class DeleteSelfController<TState> : Controller
+    public class DeleteSelfController<TState> : GrainController<TState, TState>
     where TState : class, new()
     {
-        private readonly IClusterClient _clusterClient;
 
-        public DeleteSelfController(IClusterClient clusterClient)
+        public DeleteSelfController(IClusterClient clusterClient) : base(clusterClient)
         {
-            _clusterClient = clusterClient;
         }
 
         [HttpDelete("{id}")]
-        public virtual async Task<IActionResult> Get(string id, CancellationToken cancellationToken)
+        public virtual async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
         {
-            var grain = _clusterClient.GetGrain<IRestfulGrain<TState>>(id);
-
-            var result = await grain.Delete();
+            var result = await GetGrain(id).Delete();
 
             return result.OK ? NoContent() : (IActionResult)BadRequest(result.Reason);
         }
