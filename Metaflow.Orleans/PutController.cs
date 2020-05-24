@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
@@ -7,7 +8,7 @@ namespace Metaflow.Orleans
 {
     [DefaultActionConvention]
     public class PutController<TGrain, TResource> : GrainController<TGrain, TResource>
-    where TGrain : class, new()
+
     {
 
         public PutController(IClusterClient clusterClient) : base(clusterClient)

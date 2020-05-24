@@ -9,8 +9,7 @@ namespace Metaflow.Orleans
     [Route("[controller]")]
     [NamingConvention]
     [ApiController]
-    public abstract class GrainController<TGrain, TResource> : Controller
-    where TGrain : class, new()
+    public abstract class GrainController<TState, TResource> : Controller
     {
         private readonly IClusterClient _clusterClient;
 
@@ -19,7 +18,7 @@ namespace Metaflow.Orleans
             _clusterClient = clusterClient;
         }
 
-        private Func<TGrain, Result<TResource>, IActionResult> defaultResponder = (state, result) => result.OK ? new OkObjectResult(state) : (IActionResult)new BadRequestObjectResult(result.Reason);
+        private Func<TState, Result<TResource>, IActionResult> defaultResponder = (state, result) => result.OK ? new OkObjectResult(state) : (IActionResult)new BadRequestObjectResult(result.Reason);
 
         protected virtual Task<IActionResult> ProcessRequest<TInput>(
             string id, MutationRequest type, TInput input,
@@ -27,17 +26,17 @@ namespace Metaflow.Orleans
 
         protected virtual async Task<IActionResult> ProcessRequest<TInput>(
             string id, MutationRequest type, TInput input,
-            Func<TGrain, Result<TResource>, IActionResult> responseFunc,
+            Func<TState, Result<TResource>, IActionResult> responseFunc,
             CancellationToken cancellationToken)
         {
-            IRestfulGrain<TGrain> grain = GetGrain(id);
+            IRestfulGrain<TState> grain = GetGrain(id);
             Result<TResource> result = await grain.Execute(new CustomRequest<TResource, TInput>(type, input));
             return responseFunc(await grain.Get(), result);
         }
 
-        protected virtual IRestfulGrain<TGrain> GetGrain(string id)
+        protected virtual IRestfulGrain<TState> GetGrain(string id)
         {
-            return _clusterClient.GetGrain<IRestfulGrain<TGrain>>(id);
+            return _clusterClient.GetGrain<IRestfulGrain<TState>>(id);
         }
     }
 

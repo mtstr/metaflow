@@ -10,7 +10,7 @@ namespace Metaflow.Orleans
 
     [DefaultActionConvention]
     public class DeleteController<TGrain, TResource> : GrainController<TGrain, TResource>
-    where TGrain : class, new()
+    
     {
         public DeleteController(IClusterClient clusterClient):base(clusterClient)
         {

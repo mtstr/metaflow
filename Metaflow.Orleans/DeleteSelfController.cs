@@ -8,7 +8,7 @@ using Orleans;
 namespace Metaflow.Orleans
 {
     public class DeleteSelfController<TState> : GrainController<TState, TState>
-    where TState : class, new()
+    
     {
 
         public DeleteSelfController(IClusterClient clusterClient) : base(clusterClient)

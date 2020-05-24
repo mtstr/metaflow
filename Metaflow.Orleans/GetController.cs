@@ -8,7 +8,7 @@ using Orleans;
 namespace Metaflow.Orleans
 {
     public class GetController<TState> : GrainController<TState, TState>
-    where TState : class, new()
+    
     {
 
         public GetController(IClusterClient clusterClient) : base(clusterClient)

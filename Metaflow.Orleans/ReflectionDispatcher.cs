@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Metaflow
 {
     public class ReflectionDispatcher<T> : IDispatcher<T>
-    where T : class, new()
+    
     {
         public virtual Task<Result<TResource>> Invoke<TResource, TInput>(T owner, MutationRequest request, TInput input)
         {

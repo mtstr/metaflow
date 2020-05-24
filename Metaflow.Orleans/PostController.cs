@@ -9,7 +9,7 @@ namespace Metaflow.Orleans
 {
     [DefaultActionConvention]
     public class PostController<TGrain, TResource> : GrainController<TGrain, TResource>
-    where TGrain : class, new()
+    
     {
 
         public PostController(IClusterClient clusterClient) : base(clusterClient)

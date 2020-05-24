@@ -7,20 +7,13 @@ using Orleans.EventSourcing;
 
 namespace Metaflow.Orleans
 {
-    public class CustomRequest<TResource, TInput>
-    {
-        public MutationRequest Request { get; }
-        public TInput Input { get; }
 
-        public CustomRequest(MutationRequest request, TInput input)
-        {
-            Request = request;
-            Input = input;
-        }
+    public class GrainState<T>
+    {
+        public T Value { get; internal set; }
     }
 
-    public class RestfulGrain<T> : JournaledGrain<T>, IRestfulGrain<T>
-    where T : class, new()
+    public class RestfulGrain<T> : JournaledGrain<GrainState<T>>, IRestfulGrain<T>
     {
         private readonly IDispatcher<T> _dispatcher;
 
@@ -29,20 +22,26 @@ namespace Metaflow.Orleans
             _dispatcher = dispatcher;
         }
 
-        public T _readOnlyState;
-
         public Task<T> Get()
         {
-            if (_readOnlyState == null) UpdateReadOnlyState();
-
-            return Task.FromResult(_readOnlyState);
+            return Task.FromResult(State.Value);
         }
 
-        private void UpdateReadOnlyState()
+        protected override void TransitionState(GrainState<T> state, object @event)
         {
-            if (State == null) _readOnlyState = null;
-            _readOnlyState = State.Copy();
+            Func<MethodInfo, Type, bool> match = (m, t) =>
+            {
+                var p = m.GetParameters().ToList();
+                return m.IsPublic && m.Name == "Apply" && m.ReturnType == typeof(T) && p.Count == 1 && p[0].ParameterType == t;
+            };
+            var mi = typeof(T).GetMethods().FirstOrDefault(m => match(m, @event.GetType()));
+
+            if (mi != null)
+            {
+                State.Value = (T)mi.Invoke(state.Value, new[] { @event });
+            }
         }
+
 
         private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
         {
@@ -54,7 +53,7 @@ namespace Metaflow.Orleans
 
             try
             {
-                result = await _dispatcher.Invoke<TResource, TInput>(State, request, input);
+                result = await _dispatcher.Invoke<TResource, TInput>(State.Value, request, input);
 
                 @event = result.OK switch
                 {
@@ -70,7 +69,6 @@ namespace Metaflow.Orleans
 
             RaiseEvent(@event);
             await ConfirmEvents();
-            UpdateReadOnlyState();
 
             return result;
         }
@@ -94,7 +92,7 @@ namespace Metaflow.Orleans
 
         public Task<Result<T>> Delete()
         {
-            return Handle<T, T>(MutationRequest.DELETE, null);
+            return Handle<T, T>(MutationRequest.DELETE, default);
 
         }
 
