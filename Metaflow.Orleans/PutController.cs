@@ -6,11 +6,10 @@ using Orleans;
 
 namespace Metaflow.Orleans
 {
+
     [DefaultActionConvention]
     public class PutController<TGrain, TResource> : GrainController<TGrain, TResource>
-
     {
-
         public PutController(IClusterClient clusterClient) : base(clusterClient)
         {
         }
