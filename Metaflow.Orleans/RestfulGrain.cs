@@ -17,10 +17,14 @@ namespace Metaflow.Orleans
     {
         private readonly IDispatcher<T> _dispatcher;
 
+        private bool _exists;
+
         public RestfulGrain(IDispatcher<T> dispatcher)
         {
             _dispatcher = dispatcher;
         }
+
+        public Task<bool> Exists() => Task.FromResult(_exists);
 
         public Task<T> Get()
         {
@@ -29,6 +33,19 @@ namespace Metaflow.Orleans
 
         protected override void TransitionState(GrainState<T> state, object @event)
         {
+            var (newState, exists) = @event switch
+            {
+                Deleted<T> _ => (default(T), false),
+                Created<T> c => (c.After, true),
+                _ => (CalculateState(state, @event), true)
+            };
+
+            _exists = exists;
+            State.Value = newState;
+        }
+
+        private T CalculateState(GrainState<T> state, object @event)
+        {
             Func<MethodInfo, Type, bool> match = (m, t) =>
             {
                 var p = m.GetParameters().ToList();
@@ -36,12 +53,8 @@ namespace Metaflow.Orleans
             };
             var mi = typeof(T).GetMethods().FirstOrDefault(m => match(m, @event.GetType()));
 
-            if (mi != null)
-            {
-                State.Value = (T)mi.Invoke(state.Value, new[] { @event });
-            }
+            return mi != null ? (T)mi.Invoke(state.Value, new[] { @event }) : state.Value;
         }
-
 
         private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
         {

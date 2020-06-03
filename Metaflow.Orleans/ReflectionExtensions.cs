@@ -7,15 +7,15 @@ namespace Metaflow
 {
     public static class ReflectionExtensions
     {
-        public static MethodInfo DeleteSelfMethod(this Type grainType)
+        public static MethodInfo SelfMethod(this Type grainType, MutationRequest request)
         {
-            static bool match(MethodInfo mi, Type grainType)
-            => mi.Name.ToUpperInvariant() == "DELETE"
+            static bool match(MethodInfo mi, Type grainType, MutationRequest request)
+            => mi.Name.ToUpperInvariant() == request.ToString().ToUpperInvariant()
                 && mi.IsPublic
                 && ReturnTypeMatches(mi, grainType)
                 && !mi.GetParameters().Any();
 
-            return grainType.GetMethods().FirstOrDefault(mi => match(mi, grainType));
+            return grainType.GetMethods().FirstOrDefault(mi => match(mi, grainType, request));
         }
 
         public static IEnumerable<MethodInfo> MatchingMethods(this Type grainType, MutationRequest request, bool matchSignature = true)

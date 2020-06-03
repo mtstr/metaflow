@@ -7,5 +7,7 @@ namespace Metaflow.Orleans
     public interface IRestfulGrain<T> : IRestful<T>, IGrainWithStringKey
     {
         Task<Result<TResource>> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request);
+
+        Task<bool> Exists();
     }
 }

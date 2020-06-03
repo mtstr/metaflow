@@ -47,23 +47,36 @@ namespace Metaflow.Orleans
             [typeof(GetController<>)] = t => new List<Type>() { t },
             [typeof(DeleteController<,>)] = t => FindTypes(t, MutationRequest.DELETE),
             [typeof(PutController<,>)] = t => FindTypes(t, MutationRequest.PUT),
-            [typeof(PostController<,>)] = t => FindTypes(t, MutationRequest.POST),
+            [typeof(PostController<,>)] = t =>
+            {
+                var selfCreate = t.SelfMethod(MutationRequest.POST);
+                var all = FindTypes(t, MutationRequest.POST);
+
+                if (selfCreate != null)
+                    all.Add(selfCreate.ReturnType.GenericTypeArguments[0]);
+
+                return all;
+            },
             [typeof(DeleteSelfController<>)] = t =>
             {
-                var selfDeleteAvailable = t.DeleteSelfMethod();
+                var selfDeleteAvailable = t.SelfMethod(MutationRequest.DELETE);
                 if (selfDeleteAvailable != null) return new List<Type>() { t };
                 return new List<Type>();
             }
         };
 
-        private static List<Type> FindTypes(Type t, MutationRequest request) => t.MatchingMethods(request).Select(mi => mi.ReturnType.GenericTypeArguments[0]).ToList();
+        private static List<Type> FindTypes(Type t, MutationRequest request)
+        {
+            var all = t.MatchingMethods(request).ToList();
 
+            return all.Select(mi => mi.ReturnType.GenericTypeArguments[0]).ToList();
+        }
 
         private static Type BuildClosedGenericControllerType(Type openControllerType, Type grainType, Type resourceType)
         {
             List<Type> genericTypeParams = new List<Type> { grainType };
 
-            if (resourceType != grainType) genericTypeParams.Add(resourceType);
+            if (resourceType != grainType || openControllerType.GetGenericTypeDefinition() == typeof(PostController<,>)) genericTypeParams.Add(resourceType);
 
             Type genericControllerType = openControllerType.MakeGenericType(genericTypeParams.ToArray());
 

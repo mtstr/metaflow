@@ -9,9 +9,7 @@ namespace Metaflow.Orleans
 {
     [DefaultActionConvention]
     public class PostController<TGrain, TResource> : GrainController<TGrain, TResource>
-    
     {
-
         public PostController(IClusterClient clusterClient) : base(clusterClient)
         {
         }
@@ -20,7 +18,7 @@ namespace Metaflow.Orleans
         public virtual async Task<IActionResult> Respond(string id, TResource input, CancellationToken cancellationToken)
         {
             var grain = GetGrain(id);
-            
+
             Result<TResource> result = await grain.Post(input);
 
             TGrain state = await grain.Get();

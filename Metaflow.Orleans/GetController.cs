@@ -8,9 +8,7 @@ using Orleans;
 namespace Metaflow.Orleans
 {
     public class GetController<TState> : GrainController<TState, TState>
-    
     {
-
         public GetController(IClusterClient clusterClient) : base(clusterClient)
         {
         }
@@ -18,9 +16,9 @@ namespace Metaflow.Orleans
         [HttpGet("{id}")]
         public virtual async Task<IActionResult> Get(string id, CancellationToken cancellationToken)
         {
-            var state = await GetGrain(id).Get();
+            IRestfulGrain<TState> grain = GetGrain(id);
 
-            return state == null ? NotFound() : (IActionResult)Ok(state);
+            return (await grain.Exists()) ? Ok(await grain.Get()) : (IActionResult)NotFound();
         }
     }
 

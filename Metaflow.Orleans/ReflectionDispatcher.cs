@@ -2,27 +2,26 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
-
+using static Metaflow.MutationRequest;
 namespace Metaflow
 {
     public class ReflectionDispatcher<T> : IDispatcher<T>
-    
+
     {
         public virtual Task<Result<TResource>> Invoke<TResource, TInput>(T owner, MutationRequest request, TInput input)
         {
-            if (request == MutationRequest.DELETE && typeof(T) == typeof(TInput))
+            return request switch
             {
-                return DispatchSelfDelete<TResource>(owner);
-            }
-            else
-            {
-                return Dispatch<TResource, TInput>(owner, request, input);
-            }
+                DELETE when input is T _ => DispatchSelf<TResource>(owner, request),
+                POST when input is T self => DispatchSelf<TResource>(self, request),
+                _ => Dispatch<TResource, TInput>(owner, request, input)
+            };
         }
 
-        private Task<Result<TResource>> DispatchSelfDelete<TResource>(T owner)
+
+        private Task<Result<TResource>> DispatchSelf<TResource>(T owner, MutationRequest request)
         {
-            MethodInfo mi = typeof(T).DeleteSelfMethod();
+            MethodInfo mi = typeof(T).SelfMethod(request);
 
             if (mi == null) throw new InvalidOperationException();
 
