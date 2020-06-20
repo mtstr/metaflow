@@ -19,6 +19,8 @@ namespace Metaflow.Orleans
         {
             var grain = GetGrain(id);
 
+            if (input is TGrain && await grain.Exists()) return Conflict();
+
             Result<TResource> result = await grain.Post(input);
 
             TGrain state = await grain.Get();
@@ -26,5 +28,4 @@ namespace Metaflow.Orleans
             return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Reason);
         }
     }
-
 }

@@ -1,30 +1,24 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using Orleans.EventSourcing;
 
 namespace Metaflow.Orleans
 {
 
-    public class GrainState<T>
-    {
-        public T Value { get; internal set; }
-    }
-
     public class RestfulGrain<T> : JournaledGrain<GrainState<T>>, IRestfulGrain<T>
     {
         private readonly IDispatcher<T> _dispatcher;
+        private readonly ICustomEventStore _eventStore;
 
-        private bool _exists;
-
-        public RestfulGrain(IDispatcher<T> dispatcher)
+        public RestfulGrain(IDispatcher<T> dispatcher, ICustomEventStore eventStore)
         {
             _dispatcher = dispatcher;
+            _eventStore = eventStore;
         }
 
-        public Task<bool> Exists() => Task.FromResult(_exists);
+        public Task<bool> Exists() => Task.FromResult(State.Exists);
 
         public Task<T> Get()
         {
@@ -33,33 +27,16 @@ namespace Metaflow.Orleans
 
         protected override void TransitionState(GrainState<T> state, object @event)
         {
-            var (newState, exists) = @event switch
-            {
-                Deleted<T> _ => (default(T), false),
-                Created<T> c => (c.After, true),
-                _ => (CalculateState(state, @event), true)
-            };
+            GrainState<T> newState = state.Value.Apply(@event);
 
-            _exists = exists;
-            State.Value = newState;
-        }
-
-        private T CalculateState(GrainState<T> state, object @event)
-        {
-            Func<MethodInfo, Type, bool> match = (m, t) =>
-            {
-                var p = m.GetParameters().ToList();
-                return m.IsPublic && m.Name == "Apply" && m.ReturnType == typeof(T) && p.Count == 1 && p[0].ParameterType == t;
-            };
-            var mi = typeof(T).GetMethods().FirstOrDefault(m => match(m, @event.GetType()));
-
-            return mi != null ? (T)mi.Invoke(state.Value, new[] { @event }) : state.Value;
+            State.Exists = newState.Exists;
+            State.Value = newState.Value;
         }
 
         private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
         {
-            RaiseEvent(new Received<TResource, TInput>(request, input));
-            await ConfirmEvents();
+            var reception = new Received<TResource, TInput>(request, input);
+            await LogEvent(reception);
 
             Result<TResource> result;
             object @event;
@@ -68,11 +45,9 @@ namespace Metaflow.Orleans
             {
                 result = await _dispatcher.Invoke<TResource, TInput>(State.Value, request, input);
 
-                @event = result.OK switch
-                {
-                    true => Succeeded<TResource>(request, result),
-                    false => new Rejected<TResource, TInput>(request, input)
-                };
+                @event = result.OK ?
+                                Succeeded(request, input, result) :
+                                new Rejected<TResource, TInput>(request, input);
             }
             catch (Exception ex)
             {
@@ -80,13 +55,18 @@ namespace Metaflow.Orleans
                 @event = new Failed<TResource, TInput>(request, input, ex);
             }
 
-            RaiseEvent(@event);
-            await ConfirmEvents();
+            await LogEvent(@event);
 
             return result;
         }
 
-        private object Succeeded<TResource>(MutationRequest request, Result<TResource> result)
+        private async Task LogEvent(object event1)
+        {
+            base.RaiseEvent(event1);
+            await ConfirmEvents();
+        }
+
+        private object Succeeded<TResource, TInput>(MutationRequest request, TInput input, Result<TResource> result)
         {
             return result.StateChange switch
             {
@@ -94,6 +74,7 @@ namespace Metaflow.Orleans
                 StateChange.Replaced => new Replaced<TResource>(result.Before, result.After),
                 StateChange.Deleted => new Deleted<TResource>(result.Before),
                 StateChange.Updated => new Updated<TResource>(result.Before, result.After),
+                StateChange.None => new Ignored<TResource, TInput>(request, input),
                 _ => throw new InvalidStateChange(request, result)
             };
         }
@@ -122,6 +103,21 @@ namespace Metaflow.Orleans
         public Task<Result<TResource>> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request)
         {
             return Handle<TResource, TInput>(request.Request, request.Input);
+        }
+
+        public Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage()
+        {
+            return _eventStore.ReadStateFromStorage<T>(GetPrimaryKeyString());
+        }
+
+        private string GetPrimaryKeyString()
+        {
+            return GrainReference.GrainIdentity.PrimaryKeyString;
+        }
+
+        public Task<bool> ApplyUpdatesToStorage(IReadOnlyList<object> updates, int expectedversion)
+        {
+            return _eventStore.ApplyUpdatesToStorage(GetPrimaryKeyString(), updates, expectedversion);
         }
     }
 }

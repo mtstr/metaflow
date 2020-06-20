@@ -4,7 +4,6 @@ namespace Metaflow
 {
     public class Updated<TResource>
     {
-
         public Updated(TResource before, TResource after)
         {
             Before = before;
@@ -13,6 +12,20 @@ namespace Metaflow
 
         public TResource Before { get; }
         public TResource After { get; }
+    }
+
+    public class Ignored<TResource,TInput>
+    {
+        public string Request { get; }
+        public string ResourceType { get; }
+        public TInput Input { get; }
+
+        public Ignored(MutationRequest request, TInput input)
+        {
+            Request = request.ToString();
+            ResourceType = typeof(TResource).Name;
+            Input = input;
+        }
     }
 
     public class Deleted<TResource>
