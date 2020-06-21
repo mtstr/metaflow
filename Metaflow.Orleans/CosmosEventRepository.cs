@@ -102,12 +102,6 @@ namespace Metaflow.Orleans
             return response;
         }
 
-        public Task WriteEvents(IEnumerable<Event> events)
-        {
-            var tasks = events.Select(e=>WriteEvent(e)).ToList();
-            return Task.WhenAll(tasks);
-        }
-
         public async Task WriteEvent(Event @event)
         {
             using (Stream stream = ToStream(@event))

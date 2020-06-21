@@ -14,7 +14,7 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public class Ignored<TResource,TInput>
+    public class Ignored<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
@@ -63,13 +63,13 @@ namespace Metaflow
     }
 
 
-    public class Rejected<TResource,TInput>
+    public class Rejected<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
         public TInput Input { get; }
 
-        public string Reason {get;}
+        public string Reason { get; }
 
         public Rejected(MutationRequest request, TInput input, string reason)
         {
@@ -80,23 +80,24 @@ namespace Metaflow
         }
     }
 
-    public class Failed<TResource,TInput>
+    public class Failed<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
         public TInput Input { get; }
         public string Exception { get; }
 
-        public Failed(MutationRequest request, TInput input, Exception ex)
+        public Failed(MutationRequest request, TInput input, string exception)
         {
             Request = request.ToString();
             ResourceType = typeof(TResource).Name;
             Input = input;
-            Exception = ex.Message;
+            Exception = exception;
         }
+
     }
 
-    public class Received<TResource,TInput>
+    public class Received<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }

@@ -10,7 +10,6 @@ namespace Metaflow.Orleans
         IAsyncEnumerable<Event> ReadEvents(string entityId, int startingEtag, int? targetEtag = null);
         Task<int> LatestEventVersion(string entityId, int? etag = null);
         Task<int> LatestSnapshotVersion(string entityId, int? etag = null);
-        Task WriteEvents(IEnumerable<Event> events);
         Task WriteEvent(Event @event);
     }
 }

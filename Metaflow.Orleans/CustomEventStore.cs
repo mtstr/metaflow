@@ -68,7 +68,7 @@ namespace Metaflow.Orleans
             return true;
         }
 
-        private Task WriteEvents(int etag, IReadOnlyCollection<object> updates)
+        private async Task WriteEvents(int etag, IReadOnlyCollection<object> updates)
         {
             List<Event> events = new List<Event>();
 
@@ -80,10 +80,8 @@ namespace Metaflow.Orleans
 
                 var e = new Event(_entityId, success, etag, payload: u);
 
-                events.Add(e);
+                await _eventRepository.WriteEvent(e);
             }
-
-            return _eventRepository.WriteEvents(events);
         }
 
         private Task<int> GetVer()

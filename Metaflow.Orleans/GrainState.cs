@@ -2,7 +2,7 @@ namespace Metaflow.Orleans
 {
     public class GrainState<T>
     {
-        public T Value { get; internal set; }
-        public bool Exists { get; internal set; }
+        public T Value { get; set; }
+        public bool Exists { get; set; }
     }
 }

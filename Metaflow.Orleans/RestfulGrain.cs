@@ -14,7 +14,7 @@ namespace Metaflow.Orleans
         private readonly IDispatcher<T> _dispatcher;
         private readonly ICustomEventStore _eventStore;
 
-        private int _latestSnapshotVersion = 0;
+        private int _latestSnapshotVersion;
 
         public RestfulGrain(IDispatcher<T> dispatcher, ICustomEventStore eventStore)
         {
@@ -32,6 +32,8 @@ namespace Metaflow.Orleans
         public override async Task OnActivateAsync()
         {
             _latestSnapshotVersion = await _eventStore.LatestSnapshotVersion(GetPrimaryKeyString());
+
+            await base.OnActivateAsync();
         }
 
         protected override void TransitionState(GrainState<T> state, object @event)
@@ -67,7 +69,7 @@ namespace Metaflow.Orleans
             catch (Exception ex)
             {
                 result = Result<TResource>.Nok(ex.Message);
-                @event = new Failed<TResource, TInput>(request, input, ex);
+                @event = new Failed<TResource, TInput>(request, input, ex.Message);
             }
 
             await LogEvent(@event);
@@ -126,9 +128,10 @@ namespace Metaflow.Orleans
             return Handle<TResource, TInput>(request.Request, request.Input);
         }
 
-        public Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage()
+        public async Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage()
         {
-            return _eventStore.ReadStateFromStorage<T>(GetPrimaryKeyString());
+            var state = await _eventStore.ReadStateFromStorage<T>(GetPrimaryKeyString());
+            return state;
         }
 
         private string GetPrimaryKeyString()

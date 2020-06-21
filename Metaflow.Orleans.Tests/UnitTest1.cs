@@ -49,7 +49,11 @@ namespace Metaflow.Orleans.Tests
 
             const string eid = "e_1";
 
-            await repo.WriteSnapshot(new Snapshot<SampleResource> { EntityId = eid, ETag = 1, State = new SampleResource { Value = "World" } });
+            SampleResource sampleResource = new SampleResource { Value = "World" };
+
+            Snapshot<SampleResource> snapshot1 = new Snapshot<SampleResource> { EntityId = eid, ETag = 1, State = new GrainState<SampleResource> { Value = sampleResource, Exists = true } };
+
+            await repo.WriteSnapshot(snapshot1);
 
             var snapshot = await repo.ReadSnapshot<SampleResource>(eid, 1);
 
