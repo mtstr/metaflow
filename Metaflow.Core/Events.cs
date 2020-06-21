@@ -69,11 +69,14 @@ namespace Metaflow
         public string ResourceType { get; }
         public TInput Input { get; }
 
-        public Rejected(MutationRequest request, TInput input)
+        public string Reason {get;}
+
+        public Rejected(MutationRequest request, TInput input, string reason)
         {
             Request = request.ToString();
             ResourceType = typeof(TResource).Name;
             Input = input;
+            Reason = reason;
         }
     }
 
@@ -82,14 +85,14 @@ namespace Metaflow
         public string Request { get; }
         public string ResourceType { get; }
         public TInput Input { get; }
-        public Exception Exception { get; }
+        public string Exception { get; }
 
         public Failed(MutationRequest request, TInput input, Exception ex)
         {
             Request = request.ToString();
             ResourceType = typeof(TResource).Name;
             Input = input;
-            Exception = ex;
+            Exception = ex.Message;
         }
     }
 

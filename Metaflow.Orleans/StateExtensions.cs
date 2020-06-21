@@ -6,13 +6,13 @@ namespace Metaflow.Orleans
 {
     public static class StateExtensions
     {
-        public static GrainState<T> Apply<T>(this T state, object @event)
+        public static GrainState<T> Apply<T>(this GrainState<T> state, object @event)
         {
             var (newState, exists) = @event switch
             {
                 Deleted<T> _ => (default(T), false),
                 Created<T> c => (c.After, true),
-                _ => (CalculateState(state, @event), true)
+                _ => (CalculateState(state.Value, @event), state.Exists)
             };
 
             return new GrainState<T> { Value = newState, Exists = exists };

@@ -9,8 +9,12 @@ namespace Metaflow.Orleans
 
     public class RestfulGrain<T> : JournaledGrain<GrainState<T>>, IRestfulGrain<T>
     {
+        private const int SnapshotPeriodity = 20;
+
         private readonly IDispatcher<T> _dispatcher;
         private readonly ICustomEventStore _eventStore;
+
+        private int _latestSnapshotVersion = 0;
 
         public RestfulGrain(IDispatcher<T> dispatcher, ICustomEventStore eventStore)
         {
@@ -25,12 +29,23 @@ namespace Metaflow.Orleans
             return Task.FromResult(State.Value);
         }
 
+        public override async Task OnActivateAsync()
+        {
+            _latestSnapshotVersion = await _eventStore.LatestSnapshotVersion(GetPrimaryKeyString());
+        }
+
         protected override void TransitionState(GrainState<T> state, object @event)
         {
-            GrainState<T> newState = state.Value.Apply(@event);
+            GrainState<T> newState = state.Apply(@event);
 
             State.Exists = newState.Exists;
             State.Value = newState.Value;
+        }
+
+
+        private bool TimeForNewSnapshot()
+        {
+            return Version - _latestSnapshotVersion >= SnapshotPeriodity;
         }
 
         private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
@@ -47,7 +62,7 @@ namespace Metaflow.Orleans
 
                 @event = result.OK ?
                                 Succeeded(request, input, result) :
-                                new Rejected<TResource, TInput>(request, input);
+                                new Rejected<TResource, TInput>(request, input, result.Reason);
             }
             catch (Exception ex)
             {
@@ -56,6 +71,12 @@ namespace Metaflow.Orleans
             }
 
             await LogEvent(@event);
+
+            if (TimeForNewSnapshot())
+            {
+                await _eventStore.WriteNewSnapshot(Version, State);
+                _latestSnapshotVersion = Version;
+            }
 
             return result;
         }

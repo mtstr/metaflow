@@ -9,7 +9,6 @@ namespace Metaflow.Orleans
 
     public class CustomEventStore : ICustomEventStore
     {
-        private const int SnapshotPeriodity = 5;
         private readonly ILogger<CustomEventStore> _log;
         private readonly IEventRepository _eventRepository;
         private string _entityId;
@@ -20,33 +19,35 @@ namespace Metaflow.Orleans
             _eventRepository = eventRepository;
         }
 
-        public async Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage<T>(string entityId, int? version = null)
+        public async Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage<T>(string entityId, int? etag = null)
         {
             _entityId = entityId;
 
             _log.LogInformation("ReadStateFromStorage: start");
 
-            int etag = version ?? await GetVer();
+            int desiredVersion = etag ?? await GetVer();
 
-            Snapshot<T> snapshot = await _eventRepository.ReadSnapshot<T>(_entityId, etag);
-            T state = snapshot.State;
+            GrainState<T> state = new GrainState<T>();
 
-            _log.LogInformation($"ReadStateFromStorage: ReadSnapshot loaded etag {etag}");
+            var latestSuitableSnapshotVersion = await _eventRepository.LatestSnapshotVersion(entityId, etag);
 
-            int newETag = await ApplyNewerEvents(etag, state);
+            if (latestSuitableSnapshotVersion > 0)
+            {
+                Snapshot<T> snapshot = await _eventRepository.ReadSnapshot<T>(_entityId, latestSuitableSnapshotVersion);
 
-            if (TimeForNewSnapshot(etag, newETag)) await WriteNewSnapshot(newETag, state);
+                _log.LogInformation($"ReadStateFromStorage: ReadSnapshot loaded etag {latestSuitableSnapshotVersion}");
 
-            etag = newETag;
+                state = snapshot.State;
+            }
 
-            _log.LogInformation($"ReadStateFromStorage: returning etag {etag}");
+            if (latestSuitableSnapshotVersion < desiredVersion)
+            {
+                await ApplyNewerEvents(latestSuitableSnapshotVersion, state, desiredVersion);
+            }
 
-            return new KeyValuePair<int, GrainState<T>>(etag, new GrainState<T> { Value = state });
-        }
+            _log.LogInformation($"ReadStateFromStorage: returning etag {desiredVersion}");
 
-        private static bool TimeForNewSnapshot(int etag, int newETag)
-        {
-            return newETag != etag && (newETag - etag) % SnapshotPeriodity == 0;
+            return new KeyValuePair<int, GrainState<T>>(desiredVersion, state);
         }
 
         public async Task<bool> ApplyUpdatesToStorage(string entityId, IReadOnlyList<object> updates, int expectedversion)
@@ -62,53 +63,44 @@ namespace Metaflow.Orleans
 
             if (ver != expectedversion) return false;
 
-            // if (ver == 0)
-            // {
-            //     _log.LogInformation("ApplyUpdatesToStorage: etag 0 special-case write Initialized event");
-
-            //     await _eventRepository.WriteEvent(new Initialized
-            //     {
-            //         ETag = 0,
-            //         CustomerId = GrainPrimaryKey
-            //     });
-
-            //     _log.LogInformation("ApplyUpdatesToStorage: etag 0 special-case write snapshot");
-
-            //     await WriteNewSnapshot(0, State);
-            // }
-
-            foreach (var e in updates)
-            {
-                ver++;
-
-                _log.LogInformation($"ApplyUpdatesToStorage: update ver {ver} event {e.GetType().Name}");
-
-                await WriteEvent(ver, e);
-            }
+            await WriteEvents(ver, updates);
 
             return true;
         }
 
-        private Task WriteEvent(int ver, object e)
+        private Task WriteEvents(int etag, IReadOnlyCollection<object> updates)
         {
-            return _eventRepository.WriteEvent(new Event() { EntityId = _entityId, ETag = ver, Payload = e });
+            List<Event> events = new List<Event>();
+
+            foreach (var u in updates)
+            {
+                etag++;
+                bool success = u.GetType().GetGenericTypeDefinition() != typeof(Failed<,>) &&
+                            u.GetType().GetGenericTypeDefinition() != typeof(Rejected<,>);
+
+                var e = new Event(_entityId, success, etag, payload: u);
+
+                events.Add(e);
+            }
+
+            return _eventRepository.WriteEvents(events);
         }
 
         private Task<int> GetVer()
         {
-            return _eventRepository.LatestVersion(_entityId);
+            return _eventRepository.LatestEventVersion(_entityId);
         }
 
-        private async Task<int> ApplyNewerEvents<T>(int snapshotETag, T state)
+        private async Task<int> ApplyNewerEvents<T>(int snapshotETag, GrainState<T> state, int? targetEtag = null)
         {
             int etag = snapshotETag;
 
-            IAsyncEnumerable<Event> events = GetEvents(snapshotETag);
+            IAsyncEnumerable<Event> events = GetEvents(snapshotETag, targetEtag);
 
             await foreach (var @event in events)
             {
                 etag = @event.ETag;
-                state = state.Apply(@event).Value;
+                state = state.Apply(@event);
             }
 
             _log.LogInformation($"ApplyNewerEvents: exit returning etag {etag}");
@@ -116,18 +108,23 @@ namespace Metaflow.Orleans
             return etag;
         }
 
-        private IAsyncEnumerable<Event> GetEvents(int snapshotETag)
+        private IAsyncEnumerable<Event> GetEvents(int snapshotETag, int? targetEtag = null)
         {
-            return _eventRepository.ReadEvents(_entityId, snapshotETag);
+            return _eventRepository.ReadEvents(_entityId, snapshotETag, targetEtag);
         }
 
-        private async Task WriteNewSnapshot<T>(int etag, T state)
+        public async Task WriteNewSnapshot<T>(int etag, GrainState<T> state)
         {
             _log.LogInformation($"WriteNewSnapshot: start write for etag {etag}");
 
             await _eventRepository.WriteSnapshot(new Snapshot<T> { EntityId = _entityId, ETag = etag, State = state });
 
             _log.LogInformation("WriteNewSnapshot: exit");
+        }
+
+        public Task<int> LatestSnapshotVersion(string entityId)
+        {
+            return _eventRepository.LatestSnapshotVersion(entityId);
         }
     }
 }

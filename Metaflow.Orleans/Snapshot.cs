@@ -9,6 +9,6 @@ namespace Metaflow.Orleans
         
         [JsonProperty("etag")]
         public int ETag { get; set; }
-        public T State { get; set; }
+        public GrainState<T> State { get; set; }
     }
 }

@@ -2,7 +2,7 @@ using System;
 
 namespace Metaflow
 {
-    [AttributeUsage(AttributeTargets.Struct)]
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public class RestfulAttribute : Attribute
     {
     }

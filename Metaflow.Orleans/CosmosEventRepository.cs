@@ -10,10 +10,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace Metaflow.Orleans
 {
-
     public class CosmosEventRepository : IEventRepository
     {
-        private readonly CosmosClient _client;
+        private readonly CosmosEventContainers _containers;
         private static readonly JsonSerializer Serializer = new JsonSerializer()
         {
             ContractResolver = new DefaultContractResolver
@@ -26,31 +25,46 @@ namespace Metaflow.Orleans
 
         private readonly ILogger<CosmosEventRepository> _log;
 
-        public CosmosEventRepository(CosmosClient client, ILogger<CosmosEventRepository> log)
+        public CosmosEventRepository(CosmosEventContainers containers, ILogger<CosmosEventRepository> log)
         {
-            _client = client;
+            _containers = containers;
             _log = log;
         }
-
-        public async Task<int> LatestVersion(string entityId)
+        public Task<int> LatestEventVersion(string entityId, int? etag = null)
         {
-            QueryDefinition query = new QueryDefinition("select VALUE MAX(s.etag) from EventStream s");
+            return LatestVersion(entityId, EventStream(), etag);
+        }
 
-            using FeedIterator<int> streamResultSet = EventStream().GetItemQueryIterator<int>(
+        public Task<int> LatestSnapshotVersion(string entityId, int? etag = null)
+        {
+            return LatestVersion(entityId, Snapshots(), etag);
+        }
+
+        private async Task<int> LatestVersion(string entityId, Container container, int? etag = null)
+        {
+            QueryDefinition query = etag.HasValue ?
+             new QueryDefinition($"select VALUE MAX(s.etag) from {container.Id} s where s.etag <= @etagParam").WithParameter("@etagParam", etag) :
+             new QueryDefinition($"select VALUE MAX(s.etag) from {container.Id} s");
+
+            using FeedIterator<int> streamResultSet = container.GetItemQueryIterator<int>(
                 query,
                 requestOptions: new QueryRequestOptions()
                 {
                     PartitionKey = new PartitionKey(entityId)
                 });
 
-            return (await streamResultSet.ReadNextAsync()).Resource.First();
+            var v = (await streamResultSet.ReadNextAsync()).Resource.FirstOrDefault();
+
+            return v;
         }
 
-        public async IAsyncEnumerable<Event> ReadEvents(string entityId, int etag)
+        public async IAsyncEnumerable<Event> ReadEvents(string entityId, int startingEtag, int? targetEtag = null)
         {
-            QueryDefinition query = new QueryDefinition(
-                "select * from EventStream s where s.etag > @etagParam ORDER BY s.etag ASC")
-                .WithParameter("@etagParam", etag);
+            QueryDefinition query = targetEtag.HasValue ?
+             new QueryDefinition("select * from EventStream s where s.etag > @etagParam AND s.etag<=@targetEtagParam ORDER BY s.etag ASC")
+             .WithParameter("@etagParam", startingEtag)
+             .WithParameter("@targetEtagParam", targetEtag) :
+            new QueryDefinition("select * from EventStream s where s.etag > @etagParam ORDER BY s.etag ASC").WithParameter("@etagParam", startingEtag);
 
             using (FeedIterator streamResultSet = EventStream().GetItemQueryStreamIterator(
                 query,
@@ -88,6 +102,12 @@ namespace Metaflow.Orleans
             return response;
         }
 
+        public Task WriteEvents(IEnumerable<Event> events)
+        {
+            var tasks = events.Select(e=>WriteEvent(e)).ToList();
+            return Task.WhenAll(tasks);
+        }
+
         public async Task WriteEvent(Event @event)
         {
             using (Stream stream = ToStream(@event))
@@ -122,12 +142,12 @@ namespace Metaflow.Orleans
 
         private Container EventStream()
         {
-            return _client.GetContainer("main", "EventStream");
+            return _containers.EventStream;
         }
 
         private Container Snapshots()
         {
-            return _client.GetContainer("main", "Snapshots");
+            return _containers.Snapshots;
         }
 
         private static T FromStream<T>(Stream stream)
