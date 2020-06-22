@@ -16,6 +16,11 @@ namespace Metaflow.Orleans
                         apm.FeatureProviders.Add(new GrainControllerFeatureProvider(resourceTypes));
                     });
 
+            builder.AddJsonOptions(o =>
+            {
+                o.JsonSerializerOptions.AddMaybeConverter();
+            });
+
             return builder;
         }
 

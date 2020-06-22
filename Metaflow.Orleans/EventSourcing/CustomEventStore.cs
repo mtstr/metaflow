@@ -98,7 +98,7 @@ namespace Metaflow.Orleans
             await foreach (var @event in events)
             {
                 etag = @event.ETag;
-                state = state.Apply(@event);
+                state = state.Apply(@event.Payload);
             }
 
             _log.LogInformation($"ApplyNewerEvents: exit returning etag {etag}");
