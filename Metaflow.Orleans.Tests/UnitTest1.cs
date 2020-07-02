@@ -62,7 +62,7 @@ namespace Metaflow.Orleans.Tests
 
         private static CosmosEventContainers GetContainers()
         {
-            var cosmosClient = new CosmosClient("https://devmtstr.documents.azure.com:443/", "wX0D9FJk7jfrPcTAnT5rg1w0DDNLXA58b31rNVmb36IBiuOmNer7BbdaB95mlEyGhlyNaTEqDSo3CwCcfso1Bw==");
+            var cosmosClient = new CosmosClient("https://devmtstr.documents.azure.com:443/", "key");
 
             var snapshotContainer = cosmosClient.GetContainer("main", "Snapshots");
             var streamContainer = cosmosClient.GetContainer("main", "EventStream");
