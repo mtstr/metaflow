@@ -9,7 +9,7 @@ namespace Metaflow.Orleans
     [Route("[controller]")]
     [NamingConvention]
     [ApiController]
-    public abstract class GrainController<TState, TResource> : Controller
+    public abstract class GrainController<TState, TResource> : ControllerBase
     {
         private readonly IClusterClient _clusterClient;
 

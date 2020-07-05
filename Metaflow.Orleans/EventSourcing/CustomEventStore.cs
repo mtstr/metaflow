@@ -42,7 +42,11 @@ namespace Metaflow.Orleans
 
             if (latestSuitableSnapshotVersion < desiredVersion)
             {
-                await ApplyNewerEvents(latestSuitableSnapshotVersion, state, desiredVersion);
+                int restoredVersion;
+                
+                (restoredVersion, state) = await ApplyNewerEvents(latestSuitableSnapshotVersion, state, desiredVersion);
+
+                if (restoredVersion!=desiredVersion) throw new EventSourcingException($"Restored version {restoredVersion} does not match requested version {desiredVersion}");
             }
 
             _log.LogInformation($"ReadStateFromStorage: returning etag {desiredVersion}");
@@ -89,7 +93,7 @@ namespace Metaflow.Orleans
             return _eventRepository.LatestEventVersion(_entityId);
         }
 
-        private async Task<int> ApplyNewerEvents<T>(int snapshotETag, GrainState<T> state, int? targetEtag = null)
+        private async Task<(int, GrainState<T>)> ApplyNewerEvents<T>(int snapshotETag, GrainState<T> state, int? targetEtag = null)
         {
             int etag = snapshotETag;
 
@@ -103,7 +107,7 @@ namespace Metaflow.Orleans
 
             _log.LogInformation($"ApplyNewerEvents: exit returning etag {etag}");
 
-            return etag;
+            return (etag, state);
         }
 
         private IAsyncEnumerable<Event> GetEvents(int snapshotETag, int? targetEtag = null)

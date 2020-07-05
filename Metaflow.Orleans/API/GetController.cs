@@ -18,7 +18,9 @@ namespace Metaflow.Orleans
         {
             IRestfulGrain<TState> grain = GetGrain(id);
 
-            return (await grain.Exists()) ? Ok(await grain.Get()) : (IActionResult)NotFound();
+            bool v = await grain.Exists();
+            
+            return v ? base.Ok(await grain.Get()) : (IActionResult)base.NotFound();
         }
     }
 

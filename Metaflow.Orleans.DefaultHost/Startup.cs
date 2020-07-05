@@ -56,10 +56,9 @@ namespace Metaflow.Orleans.DefaultHost
 
             app.UseEndpoints(endpoints =>
                 {
+                    endpoints.MapControllers();
                     endpoints.MapHealthChecks("/hc");
                 });
-
-            app.UseMvc();
         }
     }
 }

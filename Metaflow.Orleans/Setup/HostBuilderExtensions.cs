@@ -53,7 +53,7 @@ namespace Metaflow.Orleans
 
                                     services.AddScoped<ITelemetryClient, AppInsightsTelemetryClient>();
 
-                                    services.AddMvc(o => o.EnableEndpointRouting = false)
+                                    services.AddControllers()
                                             .AddMetaflow(metaflowAssemblies);
 
                                     services.AddSingleton(p =>
@@ -71,7 +71,7 @@ namespace Metaflow.Orleans
                                 if (config.Local)
                                 {
                                     siloBuilder
-                                        .UseLocalhostClustering()
+                                        .UseLocalhostClustering(siloPort: config.SiloPort, gatewayPort: config.GatewayPort)
                                         .Configure<EndpointOptions>(o => o.AdvertisedIPAddress = IPAddress.Loopback);
                                 }
                                 else
