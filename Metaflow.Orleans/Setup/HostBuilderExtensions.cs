@@ -1,7 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.Loader;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +14,7 @@ using Orleans.Hosting;
 
 namespace Metaflow.Orleans
 {
-    public static class OrleansExtensions
+    public static class HostBuilderExtensions
     {
         public static IHostBuilder AddMetaflow(this IHostBuilder builder)
         {
@@ -20,7 +22,7 @@ namespace Metaflow.Orleans
                             {
                                 var config = ctx.Configuration.GetSection("Metaflow").Get<MetaflowConfig>();
 
-                                var metaflowAssemblies = config.Assemblies.Where(a => !string.IsNullOrEmpty(a)).Select(a => Assembly.Load(a)).ToList();
+                                var metaflowAssemblies = config.Assemblies.Where(a => !string.IsNullOrEmpty(a)).Select(a => AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(a))).ToList();
 
 
                                 siloBuilder
@@ -48,6 +50,8 @@ namespace Metaflow.Orleans
                                     services.AddApplicationInsightsTelemetry();
 
                                     services.AddHealthChecks();
+
+                                    services.AddScoped<ITelemetryClient, AppInsightsTelemetryClient>();
 
                                     services.AddMvc(o => o.EnableEndpointRouting = false)
                                             .AddMetaflow(metaflowAssemblies);

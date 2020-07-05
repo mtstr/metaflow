@@ -95,11 +95,11 @@ namespace Metaflow.Orleans
 
         private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
         {
-            _telemetry.TrackRequest(request, input);
+            _telemetry.TrackRequest<TResource, TInput>(request, GetPrimaryKeyString());
 
             if (!State.Exists && !ImplicitCreateAllowed())
             {
-                return NotFound<TResource>();
+                return NotFound<TResource, TInput>();
             }
 
             try
@@ -122,7 +122,7 @@ namespace Metaflow.Orleans
 
             if (!State.Exists && ImplicitCreateAllowed())
             {
-                await Persist(Result<T>.Created(State.Value));
+                await Persist(Result<T>.Created(State.Value).AsEvent(request, input));
             }
 
             Result<TResource> result = await Dispatch<TResource, TInput>(request, input);
@@ -133,7 +133,7 @@ namespace Metaflow.Orleans
 
             await Snapshot();
 
-            _telemetry.TrackResult(result);
+            _telemetry.TrackResult<TResource, TInput>(GetPrimaryKeyString(), result);
 
             return result;
         }
@@ -149,16 +149,16 @@ namespace Metaflow.Orleans
 
             _logger.LogError(30001, ex, "Exception in event handling");
 
-            _telemetry.TrackException(ex);
+            _telemetry.TrackException<TResource, TInput>(request, GetPrimaryKeyString(), ex);
 
             await Persist(failure);
         }
 
-        private Result<TResource> NotFound<TResource>()
+        private Result<TResource> NotFound<TResource, TInput>()
         {
             var result = Result<TResource>.Nok($"Object {GetPrimaryKeyString()} does not exist and cannot be created implicitly");
 
-            _telemetry.TrackResult(result);
+            _telemetry.TrackResult<TResource, TInput>(GetPrimaryKeyString(), result);
 
             return result;
         }
