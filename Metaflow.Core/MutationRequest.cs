@@ -1,4 +1,4 @@
-namespace Metaflow
+﻿namespace Metaflow
 {
     public enum MutationRequest
     {

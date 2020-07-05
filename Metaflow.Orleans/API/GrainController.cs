@@ -30,6 +30,7 @@ namespace Metaflow.Orleans
             CancellationToken cancellationToken)
         {
             IRestfulGrain<TState> grain = GetGrain(id);
+
             Result<TResource> result = await grain.Execute(new CustomRequest<TResource, TInput>(type, input));
             return responseFunc(await grain.Get(), result);
         }

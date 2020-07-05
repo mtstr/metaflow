@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Orleans.EventSourcing;
 
 namespace Metaflow.Orleans
@@ -13,13 +16,16 @@ namespace Metaflow.Orleans
 
         private readonly IDispatcher<T> _dispatcher;
         private readonly ICustomEventStore _eventStore;
-
+        private readonly ILogger<RestfulGrain<T>> _logger;
+        private readonly ITelemetryClient _telemetry;
         private int _latestSnapshotVersion;
 
-        public RestfulGrain(IDispatcher<T> dispatcher, ICustomEventStore eventStore)
+        public RestfulGrain(IDispatcher<T> dispatcher, ICustomEventStore eventStore, ILogger<RestfulGrain<T>> logger, ITelemetryClient telemetry)
         {
             _dispatcher = dispatcher;
             _eventStore = eventStore;
+            _logger = logger;
+            _telemetry = telemetry;
         }
 
         public Task<bool> Exists() => Task.FromResult(State.Exists);
@@ -34,72 +40,6 @@ namespace Metaflow.Orleans
             _latestSnapshotVersion = await _eventStore.LatestSnapshotVersion(GetPrimaryKeyString());
 
             await base.OnActivateAsync();
-        }
-
-        protected override void TransitionState(GrainState<T> state, object @event)
-        {
-            GrainState<T> newState = state.Apply(@event);
-
-            State.Exists = newState.Exists;
-            State.Value = newState.Value;
-        }
-
-
-        private bool TimeForNewSnapshot()
-        {
-            return Version - _latestSnapshotVersion >= SnapshotPeriodity;
-        }
-
-        private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
-        {
-            var reception = new Received<TResource, TInput>(request, input);
-            await LogEvent(reception);
-
-            Result<TResource> result;
-            object @event;
-
-            try
-            {
-                result = await _dispatcher.Invoke<TResource, TInput>(State.Value, request, input);
-
-                @event = result.OK ?
-                                Succeeded(request, input, result) :
-                                new Rejected<TResource, TInput>(request, input, result.Reason);
-            }
-            catch (Exception ex)
-            {
-                result = Result<TResource>.Nok(ex.Message);
-                @event = new Failed<TResource, TInput>(request, input, ex.Message);
-            }
-
-            await LogEvent(@event);
-
-            if (TimeForNewSnapshot())
-            {
-                await _eventStore.WriteNewSnapshot(Version, State);
-                _latestSnapshotVersion = Version;
-            }
-
-            return result;
-        }
-
-        private async Task LogEvent(object event1)
-        {
-            base.RaiseEvent(event1);
-            await ConfirmEvents();
-        }
-
-        private object Succeeded<TResource, TInput>(MutationRequest request, TInput input, Result<TResource> result)
-        {
-            return result.StateChange switch
-            {
-                StateChange.Created => new Created<TResource>(result.After),
-                StateChange.Replaced => new Replaced<TResource>(result.Before, result.After),
-                StateChange.Deleted => new Deleted<TResource>(result.Before),
-                StateChange.Updated => new Updated<TResource>(result.Before, result.After),
-                StateChange.None => new Ignored<TResource, TInput>(request, input),
-                _ => throw new InvalidStateChange(request, result)
-            };
         }
 
         public Task<Result<TResource>> Put<TResource>(TResource resource)
@@ -134,14 +74,119 @@ namespace Metaflow.Orleans
             return state;
         }
 
-        private string GetPrimaryKeyString()
-        {
-            return GrainReference.GrainIdentity.PrimaryKeyString;
-        }
-
         public Task<bool> ApplyUpdatesToStorage(IReadOnlyList<object> updates, int expectedversion)
         {
             return _eventStore.ApplyUpdatesToStorage(GetPrimaryKeyString(), updates, expectedversion);
+        }
+
+        protected override void TransitionState(GrainState<T> state, object @event)
+        {
+            GrainState<T> newState = state.Apply(@event);
+
+            State.Exists = newState.Exists;
+            State.Value = newState.Value;
+        }
+
+
+        private bool TimeForNewSnapshot()
+        {
+            return Version - _latestSnapshotVersion >= SnapshotPeriodity;
+        }
+
+        private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
+        {
+            _telemetry.TrackRequest(request, input);
+
+            if (!State.Exists && !ImplicitCreateAllowed())
+            {
+                return NotFound<TResource>();
+            }
+
+            try
+            {
+                return await HandleEvent<TResource, TInput>(request, input);
+            }
+            catch (Exception ex)
+            {
+                await HandleException<TResource, TInput>(request, input, ex);
+
+                throw ex;
+            }
+        }
+
+        private async Task<Result<TResource>> HandleEvent<TResource, TInput>(MutationRequest request, TInput input)
+        {
+            var reception = new Received<TResource, TInput>(request, input);
+
+            await Persist(reception);
+
+            if (!State.Exists && ImplicitCreateAllowed())
+            {
+                await Persist(Result<T>.Created(State.Value));
+            }
+
+            Result<TResource> result = await Dispatch<TResource, TInput>(request, input);
+
+            var @event = result.AsEvent(request, input);
+
+            await Persist(@event);
+
+            await Snapshot();
+
+            _telemetry.TrackResult(result);
+
+            return result;
+        }
+
+        private async Task<Result<TResource>> Dispatch<TResource, TInput>(MutationRequest request, TInput input)
+        {
+            return await _dispatcher.Invoke<TResource, TInput>(State.Value, request, input);
+        }
+
+        private async Task HandleException<TResource, TInput>(MutationRequest request, TInput input, Exception ex)
+        {
+            var failure = new Failed<TResource, TInput>(request, input, ex.Message);
+
+            _logger.LogError(30001, ex, "Exception in event handling");
+
+            _telemetry.TrackException(ex);
+
+            await Persist(failure);
+        }
+
+        private Result<TResource> NotFound<TResource>()
+        {
+            var result = Result<TResource>.Nok($"Object {GetPrimaryKeyString()} does not exist and cannot be created implicitly");
+
+            _telemetry.TrackResult(result);
+
+            return result;
+        }
+
+        private async Task Snapshot()
+        {
+            if (TimeForNewSnapshot())
+            {
+                await _eventStore.WriteNewSnapshot(Version, State);
+                _latestSnapshotVersion = Version;
+            }
+        }
+
+        private static bool ImplicitCreateAllowed()
+        {
+            return typeof(T).GetCustomAttributes().OfType<RestfulAttribute>()
+                                .FirstOrDefault()?.AllowImplicitCreate ?? false;
+        }
+
+        private async Task Persist(object @event)
+        {
+            base.RaiseEvent(@event);
+            await ConfirmEvents();
+        }
+
+        private string GetPrimaryKeyString()
+        {
+            return GrainReference.GrainIdentity.PrimaryKeyString;
         }
     }
 }

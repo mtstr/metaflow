@@ -1,18 +1,8 @@
 using System;
 using System.Globalization;
-using System.Text.Json;
 
 namespace Metaflow
 {
-
-    public static class MaybeJsonExtensions
-    {
-        public static JsonSerializerOptions AddMaybeConverter(this JsonSerializerOptions options)
-        {
-            options.Converters.Add(new JsonConverterFactoryForMaybeOfT());
-            return options;
-        }
-    }
     public sealed class Maybe<T> where T : struct
     {
         private readonly T? value;

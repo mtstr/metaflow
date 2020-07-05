@@ -2,7 +2,7 @@ using System;
 
 namespace Metaflow
 {
-    public class Updated<TResource>
+    public readonly struct Updated<TResource>
     {
         public Updated(TResource before, TResource after)
         {
@@ -14,7 +14,7 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public class Ignored<TResource, TInput>
+    public readonly struct Ignored<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
@@ -28,7 +28,7 @@ namespace Metaflow
         }
     }
 
-    public class Deleted<TResource>
+    public readonly struct Deleted<TResource>
     {
         public Deleted(TResource before)
         {
@@ -38,7 +38,7 @@ namespace Metaflow
         public TResource Before { get; }
     }
 
-    public class Replaced<TResource>
+    public readonly struct Replaced<TResource>
     {
 
         public Replaced(TResource before, TResource after)
@@ -51,7 +51,7 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public class Created<TResource>
+    public readonly struct Created<TResource>
     {
 
         public Created(TResource after)
@@ -63,7 +63,7 @@ namespace Metaflow
     }
 
 
-    public class Rejected<TResource, TInput>
+    public readonly struct Rejected<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
@@ -80,7 +80,7 @@ namespace Metaflow
         }
     }
 
-    public class Failed<TResource, TInput>
+    public readonly struct Failed<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
@@ -94,10 +94,9 @@ namespace Metaflow
             Input = input;
             Exception = exception;
         }
-
     }
 
-    public class Received<TResource, TInput>
+    public readonly struct Received<TResource, TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using Microsoft.Azure.Cosmos;
@@ -13,11 +14,14 @@ namespace Metaflow.Orleans
 {
     public static class OrleansExtensions
     {
-        public static IHostBuilder AddOrleans(this IHostBuilder builder, IEnumerable<Assembly> assemblies)
+        public static IHostBuilder AddMetaflow(this IHostBuilder builder)
         {
             builder.UseOrleans((Microsoft.Extensions.Hosting.HostBuilderContext ctx, ISiloBuilder siloBuilder) =>
                             {
-                                var config = ctx.Configuration.GetSection("Metaflow").Get<OrleansConfig>();
+                                var config = ctx.Configuration.GetSection("Metaflow").Get<MetaflowConfig>();
+
+                                var metaflowAssemblies = config.Assemblies.Where(a => !string.IsNullOrEmpty(a)).Select(a => Assembly.Load(a)).ToList();
+
 
                                 siloBuilder
                                 .Configure<ClusterOptions>(opts =>
@@ -30,7 +34,7 @@ namespace Metaflow.Orleans
                                 {
                                     parts.AddApplicationPart(typeof(IRestfulGrain<>).Assembly).WithCodeGeneration();
 
-                                    foreach (var assembly in assemblies)
+                                    foreach (var assembly in metaflowAssemblies)
                                     {
                                         parts.AddApplicationPart(assembly).WithCodeGeneration();
                                     }
@@ -40,6 +44,13 @@ namespace Metaflow.Orleans
                                     services.AddScoped(typeof(IDispatcher<>), typeof(ReflectionDispatcher<>));
                                     services.AddSingleton<ICustomEventStore, CustomEventStore>();
                                     services.AddSingleton<IEventRepository, CosmosEventRepository>();
+
+                                    services.AddApplicationInsightsTelemetry();
+
+                                    services.AddHealthChecks();
+
+                                    services.AddMvc(o => o.EnableEndpointRouting = false)
+                                            .AddMetaflow(metaflowAssemblies);
 
                                     services.AddSingleton(p =>
                                     {
@@ -63,7 +74,7 @@ namespace Metaflow.Orleans
                                 {
                                     siloBuilder
                                         .UseAzureStorageClustering(opt => opt.ConnectionString = config.AzureStorage)
-                                        .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000);
+                                        .ConfigureEndpoints(siloPort: config.SiloPort, gatewayPort: config.GatewayPort);
                                 }
                             });
 

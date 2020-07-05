@@ -7,7 +7,7 @@
     <Authors>Metastore Development</Authors>
     <Company>Metastore</Company>
     <PackageDescription>Core types for Metaflow RESTful entities</PackageDescription>
-    <RepositoryUrl>https://github.com/mtstr/orleans</RepositoryUrl>
+    <RepositoryUrl>https://github.com/mtstr/metaflow</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
