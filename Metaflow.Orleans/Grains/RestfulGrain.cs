@@ -113,7 +113,7 @@ namespace Metaflow.Orleans
         {
             _telemetry.TrackRequest<TResource, TInput>(request, GetPrimaryKeyString());
 
-            if (!State.Exists && !ImplicitCreateAllowed())
+            if (!CreateRequest(request, input) && !State.Exists && !ImplicitCreateAllowed())
             {
                 return NotFound<TResource, TInput>();
             }
@@ -128,6 +128,11 @@ namespace Metaflow.Orleans
 
                 throw ex;
             }
+        }
+
+        private bool CreateRequest(MutationRequest request, object input)
+        {
+            return request == MutationRequest.POST && input is T;
         }
 
         private async Task<Result<TResource>> HandleEvent<TResource, TInput>(MutationRequest request, TInput input)
