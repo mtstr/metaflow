@@ -23,9 +23,11 @@ namespace Metaflow.Orleans
         {
             _entityId = entityId;
 
-            _log.LogInformation("ReadStateFromStorage: start");
+            _log.LogInformation($"Reading state of {_entityId}");
 
             int desiredVersion = etag ?? await GetVer();
+
+            _log.LogInformation($"Expecting ver {desiredVersion} of {_entityId}");
 
             GrainState<T> state = new GrainState<T>();
 
@@ -43,10 +45,12 @@ namespace Metaflow.Orleans
             if (latestSuitableSnapshotVersion < desiredVersion)
             {
                 int restoredVersion;
-                
+
                 (restoredVersion, state) = await ApplyNewerEvents(latestSuitableSnapshotVersion, state, desiredVersion);
 
-                if (restoredVersion!=desiredVersion) throw new EventSourcingException($"Restored version {restoredVersion} does not match requested version {desiredVersion}");
+                _log.LogInformation($"Restored ver {restoredVersion} of {_entityId}");
+
+                if (restoredVersion != desiredVersion) throw new EventSourcingException($"Restored version {restoredVersion} does not match requested version {desiredVersion}");
             }
 
             _log.LogInformation($"ReadStateFromStorage: returning etag {desiredVersion}");

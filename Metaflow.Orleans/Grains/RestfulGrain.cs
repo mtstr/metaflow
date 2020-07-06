@@ -70,13 +70,29 @@ namespace Metaflow.Orleans
 
         public async Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage()
         {
-            var state = await _eventStore.ReadStateFromStorage<T>(GetPrimaryKeyString());
-            return state;
+            try
+            {
+                var state = await _eventStore.ReadStateFromStorage<T>(GetPrimaryKeyString());
+                return state;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(50001, ex, "Critical event sourcing error");
+                return new KeyValuePair<int, GrainState<T>>(0, new GrainState<T>());
+            }
         }
 
         public Task<bool> ApplyUpdatesToStorage(IReadOnlyList<object> updates, int expectedversion)
         {
-            return _eventStore.ApplyUpdatesToStorage(GetPrimaryKeyString(), updates, expectedversion);
+            try
+            {
+                return _eventStore.ApplyUpdatesToStorage(GetPrimaryKeyString(), updates, expectedversion);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(50002, ex, "Critical event sourcing error");
+                return Task.FromResult(false);
+            }
         }
 
         protected override void TransitionState(GrainState<T> state, object @event)
