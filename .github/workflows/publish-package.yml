@@ -19,21 +19,7 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --configuration Release --no-restore
-
-  pack:
-    env: # Or as an environment variable
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Pack
         run: dotnet pack --configuration Release -p:Version=${{ github.event.release.tag_name }}
-
-  push:
-    env: # Or as an environment variable
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Push
         run: dotnet nuget push "**/Release/*.nupkg" --source "github" --skip-duplicate
