@@ -7,7 +7,7 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
     <UserSecretsId>34b0162a-d137-44d8-87bd-ca27c95ee1bc</UserSecretsId>
-
+    <IsPackable>true</IsPackable>
     <PackageId>Metaflow.Orleans.DefaultHost</PackageId>
     <Authors>Metastore Development</Authors>
     <Company>Metastore</Company>
@@ -16,7 +16,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Metaflow.Orleans\Metaflow.Orleans.csproj" />
-    
+
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.14.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="3.1.5" />
 
