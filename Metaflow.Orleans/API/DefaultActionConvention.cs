@@ -16,8 +16,12 @@ namespace Metaflow.Orleans
             if (grainType == null || resourceType == null) return;
 
             var routeAttr = controller.Actions.First().Selectors[0].AttributeRouteModel;
+
             if (routeAttr?.Template == DefaultRoute && resourceType != grainType)
                 routeAttr.Template = "{id}/" + resourceType.Name.ToLowerInvariant();
+
+            if (controller.ControllerType.IsGenericType && controller.ControllerType.GetGenericTypeDefinition() == typeof(DeleteByIdController<,>))
+                routeAttr.Template = "{id}/" + resourceType.Name.ToLowerInvariant() + "/{itemId}";
         }
 
     }

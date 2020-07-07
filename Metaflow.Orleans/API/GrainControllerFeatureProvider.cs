@@ -47,6 +47,8 @@ namespace Metaflow.Orleans
             [typeof(GetController<>)] = t => new List<Type>() { t },
             [typeof(DeleteController<,>)] = t => FindTypes(t, MutationRequest.DELETE),
             [typeof(PutController<,>)] = t => FindTypes(t, MutationRequest.PUT),
+            [typeof(DeleteByIdController<,>)] = t =>
+                t.GenericDelete().Select(m => m.ReturnType.GenericTypeArguments[0]).ToList(),
             [typeof(PostController<,>)] = t =>
             {
                 var selfCreate = t.SelfMethod(MutationRequest.POST);
