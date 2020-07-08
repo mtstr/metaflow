@@ -14,4 +14,4 @@ WORKDIR /app
 ARG Hosting=Local
 COPY --from=build-env /app/out .
 
-ENTRYPOINT ["dotnet", "Metaflow.Orleans.DefaultHost"]
+ENTRYPOINT ["dotnet", "Metaflow.Orleans.DefaultHost.dll"]
