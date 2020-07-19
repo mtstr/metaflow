@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
     <RootNamespace>Metaflow</RootNamespace>
     <PackageId>Metaflow.Core</PackageId>
     <Authors>Metastore Development</Authors>
@@ -9,9 +10,4 @@
     <PackageDescription>Core types for Metaflow RESTful entities</PackageDescription>
     <RepositoryUrl>https://github.com/mtstr/metaflow</RepositoryUrl>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="5.0.0-preview.5.20278.1" />
-  </ItemGroup>
-
 </Project>

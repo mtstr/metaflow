@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Metaflow.Orleans
@@ -11,7 +12,10 @@ namespace Metaflow.Orleans
         public static IMvcBuilder AddMetaflow(this IMvcBuilder builder,
             ICollection<Type> resourceTypes)
         {
-            builder.ConfigureApplicationPartManager(apm =>
+            builder
+            .AddJsonOptions(options =>
+                options.JsonSerializerOptions.Converters.Add(new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.Untagged | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags)))
+            .ConfigureApplicationPartManager(apm =>
                     {
                         apm.FeatureProviders.Add(new GrainControllerFeatureProvider(resourceTypes));
                     });
