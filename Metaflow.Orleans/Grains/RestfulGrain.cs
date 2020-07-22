@@ -141,9 +141,11 @@ namespace Metaflow.Orleans
 
             await Persist(reception);
 
-            if (!State.Exists && ImplicitCreateAllowed())
+            if (!CreateRequest(request, input) && !State.Exists && ImplicitCreateAllowed())
             {
-                await Persist(Result<T>.Created(State.Value).AsEvent(request, input));
+                var creationEvent = IsPostDefined() ? await Dispatch<T, T>(MutationRequest.POST, default) : DefaultCreationEvent(request, input);
+
+                await Persist(creationEvent);
             }
 
             Result<TResource> result = await Dispatch<TResource, TInput>(request, input);
@@ -157,6 +159,16 @@ namespace Metaflow.Orleans
             _telemetry.TrackResult<TResource, TInput>(GetPrimaryKeyString(), result);
 
             return result;
+        }
+
+        private bool IsPostDefined()
+        {
+            return typeof(T).SelfMethod(MutationRequest.POST) != null;
+        }
+
+        private object DefaultCreationEvent<TInput>(MutationRequest request, TInput input)
+        {
+            return Result<T>.Created(State.Value).AsEvent(request, input);
         }
 
         private async Task<Result<TResource>> Dispatch<TResource, TInput>(MutationRequest request, TInput input)
@@ -177,7 +189,7 @@ namespace Metaflow.Orleans
 
         private Result<TResource> NotFound<TResource, TInput>()
         {
-            var result = Result<TResource>.Nok($"Object {GetPrimaryKeyString()} does not exist and cannot be created implicitly");
+            var result = Result<TResource>.Nok($"Object {GetPrimaryKeyString()} does not exist and does not support implicit creation");
 
             _telemetry.TrackResult<TResource, TInput>(GetPrimaryKeyString(), result);
 
