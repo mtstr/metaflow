@@ -21,11 +21,11 @@ namespace Metaflow.Orleans
 
             if (input is TGrain && await grain.Exists()) return Conflict();
 
-            Result<TResource> result = await grain.Post(input);
+            Result result = await grain.Post(input);
 
             TGrain state = await grain.Get();
 
-            return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Reason);
+            return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
         }
     }
 }

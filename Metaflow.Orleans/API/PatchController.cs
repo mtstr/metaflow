@@ -8,18 +8,18 @@ namespace Metaflow.Orleans
 {
 
     [DefaultActionConvention]
-    public class PutController<TGrain, TResource> : GrainController<TGrain, TResource>
+    public class PatchController<TGrain, TInput> : GrainController<TGrain, TGrain>
     {
-        public PutController(IClusterClient clusterClient) : base(clusterClient)
+        public PatchController(IClusterClient clusterClient) : base(clusterClient)
         {
         }
 
-        [HttpPut(DefaultActionConvention.DefaultRoute)]
-        public virtual async Task<IActionResult> Respond(string id, TResource input, CancellationToken cancellationToken)
+        [HttpPatch(DefaultActionConvention.DefaultRoute)]
+        public virtual async Task<IActionResult> Respond(string id, TInput input, CancellationToken cancellationToken)
         {
             var grain = GetGrain(id);
 
-            Result result = await grain.Put(input);
+            Result result = await grain.Patch(input);
 
             TGrain state = await grain.Get();
 

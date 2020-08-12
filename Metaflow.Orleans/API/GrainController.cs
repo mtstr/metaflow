@@ -18,7 +18,7 @@ namespace Metaflow.Orleans
             _clusterClient = clusterClient;
         }
 
-        private Func<TState, Result<TResource>, IActionResult> defaultResponder = (state, result) => result.OK ? new OkObjectResult(state) : (IActionResult)new BadRequestObjectResult(result.Reason);
+        private Func<TState, Result, IActionResult> defaultResponder = (state, result) => result.OK ? new OkObjectResult(state) : (IActionResult)new BadRequestObjectResult(result.Error);
 
         protected virtual Task<IActionResult> ProcessRequest<TInput>(
             string id, MutationRequest type, TInput input,
@@ -26,12 +26,12 @@ namespace Metaflow.Orleans
 
         protected virtual async Task<IActionResult> ProcessRequest<TInput>(
             string id, MutationRequest type, TInput input,
-            Func<TState, Result<TResource>, IActionResult> responseFunc,
+            Func<TState, Result, IActionResult> responseFunc,
             CancellationToken cancellationToken)
         {
             IRestfulGrain<TState> grain = GetGrain(id);
 
-            Result<TResource> result = await grain.Execute(new CustomRequest<TResource, TInput>(type, input));
+            Result result = await grain.Execute(new CustomRequest<TResource, TInput>(type, input));
             return responseFunc(await grain.Get(), result);
         }
 

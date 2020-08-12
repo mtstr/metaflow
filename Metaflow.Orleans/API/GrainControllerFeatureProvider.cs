@@ -49,13 +49,14 @@ namespace Metaflow.Orleans
             [typeof(PutController<,>)] = t => FindTypes(t, MutationRequest.PUT),
             [typeof(DeleteByIdController<,>)] = t =>
                 t.GenericDelete().Select(m => m.ReturnType.GenericTypeArguments[0]).ToList(),
+            [typeof(PatchController<,>)] = t => FindTypes(t, MutationRequest.PATCH),
             [typeof(PostController<,>)] = t =>
             {
                 var selfCreate = t.SelfMethod(MutationRequest.POST);
                 var all = FindTypes(t, MutationRequest.POST);
 
                 if (selfCreate != null)
-                    all.Add(selfCreate.ReturnType.GenericTypeArguments[0]);
+                    all.Add(t);
 
                 return all;
             },
@@ -71,7 +72,17 @@ namespace Metaflow.Orleans
         {
             var all = t.MatchingMethods(request).ToList();
 
-            return all.Select(mi => mi.ReturnType.GenericTypeArguments[0]).ToList();
+            return all.Select(mi => ResolveType(t, mi, request)).Where(t => t != null).ToList();
+        }
+
+        private static Type ResolveType(Type grainType, MethodInfo mi, MutationRequest request)
+        {
+            var parameterType = mi.GetParameters().FirstOrDefault()?.ParameterType;
+
+            if (request != MutationRequest.PATCH) return parameterType;
+
+            return grainType.GetCustomAttributes().OfType<RestfulAttribute>()
+                                            .FirstOrDefault()?.DeltaType;
         }
 
         private static Type BuildClosedGenericControllerType(Type openControllerType, Type grainType, Type resourceType)

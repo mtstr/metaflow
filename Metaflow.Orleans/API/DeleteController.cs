@@ -25,7 +25,7 @@ namespace Metaflow.Orleans
 
             TGrain state = await grain.Get();
 
-            return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Reason);
+            return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
         }
     }
 

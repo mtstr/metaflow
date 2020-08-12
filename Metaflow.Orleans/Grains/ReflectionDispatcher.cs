@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ namespace Metaflow
     public class ReflectionDispatcher<T> : IDispatcher<T>
 
     {
-        public virtual Task<Result<TResource>> Invoke<TResource, TInput>(T resourceOwner, MutationRequest request, TInput input)
+        public virtual Task<IEnumerable<object>> Invoke<TResource, TInput>(T resourceOwner, MutationRequest request, TInput input)
         {
             static bool implicitCreation() => typeof(TResource) == typeof(T) && typeof(TInput) == typeof(T);
 
@@ -21,7 +22,7 @@ namespace Metaflow
             };
         }
 
-        private Task<Result<TResource>> DispatchSelf<TResource>(T owner, MutationRequest request)
+        private Task<IEnumerable<object>> DispatchSelf<TResource>(T owner, MutationRequest request)
         {
             MethodInfo mi = typeof(T).SelfMethod(request);
 
@@ -31,7 +32,7 @@ namespace Metaflow
 
             ParameterExpression stateParam = Expression.Parameter(typeof(T));
 
-            Func<T, Result<TResource>> lambda = Expression.Lambda<Func<T, Result<TResource>>>(methodCall, stateParam).Compile();
+            Func<T, IEnumerable<object>> lambda = Expression.Lambda<Func<T, IEnumerable<object>>>(methodCall, stateParam).Compile();
 
             return Task.FromResult(lambda(owner));
         }
@@ -41,7 +42,7 @@ namespace Metaflow
             throw new InvalidOperationException($"No valid method for {request} found in {typeof(T).Name}");
         }
 
-        private static Task<Result<TResource>> Dispatch<TResource, TInput>(T owner, MutationRequest request, TInput input)
+        private static Task<IEnumerable<object>> Dispatch<TResource, TInput>(T owner, MutationRequest request, TInput input)
         {
             MethodInfo mi = typeof(T).MatchingMethods(request, false).For(typeof(TResource), typeof(TInput));
 
@@ -53,7 +54,7 @@ namespace Metaflow
 
             ParameterExpression stateParam = Expression.Parameter(typeof(T));
 
-            Func<T, TInput, Result<TResource>> lambda = Expression.Lambda<Func<T, TInput, Result<TResource>>>(methodCall, stateParam, inputParam).Compile();
+            Func<T, TInput, IEnumerable<object>> lambda = Expression.Lambda<Func<T, TInput, IEnumerable<object>>>(methodCall, stateParam, inputParam).Compile();
 
             return Task.FromResult(lambda(owner, input));
         }

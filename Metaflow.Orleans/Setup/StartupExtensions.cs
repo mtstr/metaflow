@@ -13,8 +13,10 @@ namespace Metaflow.Orleans
             ICollection<Type> resourceTypes)
         {
             builder
-            .AddJsonOptions(options =>
-                options.JsonSerializerOptions.Converters.Add(new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.Untagged | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags)))
+            .AddJsonOptions(options =>{
+                options.JsonSerializerOptions.IgnoreNullValues = true;
+                options.JsonSerializerOptions.Converters.Add(new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.Untagged | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags | JsonUnionEncoding.UnwrapOption ));
+            })
             .ConfigureApplicationPartManager(apm =>
                     {
                         apm.FeatureProviders.Add(new GrainControllerFeatureProvider(resourceTypes));

@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 
 namespace Metaflow.Orleans
 {
     public interface ITelemetryClient
     {
-        void TrackResult<TResource, TInput>(string id, Result<TResource> result);
+        void TrackEvents<TResource, TInput>(string id, IEnumerable<object> events);
         void TrackException<TResource, TInput>(MutationRequest request, string id, Exception ex);
         void TrackRequest<TResource, TInput>(MutationRequest request, string id);
     }

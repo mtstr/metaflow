@@ -42,28 +42,33 @@ namespace Metaflow.Orleans
             await base.OnActivateAsync();
         }
 
-        public Task<Result<TResource>> Put<TResource>(TResource resource)
+        public Task<Result> Put<TResource>(TResource resource)
         {
             return Handle<TResource, TResource>(MutationRequest.PUT, resource);
         }
 
-        public Task<Result<T>> Delete()
+        public Task<Result> Delete()
         {
             return Handle<T, T>(MutationRequest.DELETE, default);
 
         }
 
-        public Task<Result<TResource>> Delete<TResource>(TResource resource)
+        public Task<Result> Delete<TResource>(TResource resource)
         {
             return Handle<TResource, TResource>(MutationRequest.DELETE, resource);
         }
 
-        public Task<Result<TResource>> Post<TResource>(TResource resource)
+        public Task<Result> Patch<TDelta>(TDelta delta)
+        {
+            return Handle<T, TDelta>(MutationRequest.PATCH, delta);
+        }
+
+        public Task<Result> Post<TResource>(TResource resource)
         {
             return Handle<TResource, TResource>(MutationRequest.POST, resource);
         }
 
-        public Task<Result<TResource>> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request)
+        public Task<Result> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request)
         {
             return Handle<TResource, TInput>(request.Request, request.Input);
         }
@@ -109,7 +114,7 @@ namespace Metaflow.Orleans
             return Version - _latestSnapshotVersion >= SnapshotPeriodity;
         }
 
-        private async Task<Result<TResource>> Handle<TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<Result> Handle<TResource, TInput>(MutationRequest request, TInput input)
         {
             _telemetry.TrackRequest<TResource, TInput>(request, GetPrimaryKeyString());
 
@@ -120,7 +125,7 @@ namespace Metaflow.Orleans
 
             try
             {
-                return await HandleEvent<TResource, TInput>(request, input);
+                return Result.Ok(await HandleEvent<TResource, TInput>(request, input));
             }
             catch (Exception ex)
             {
@@ -135,7 +140,7 @@ namespace Metaflow.Orleans
             return request == MutationRequest.POST && input is T;
         }
 
-        private async Task<Result<TResource>> HandleEvent<TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<IEnumerable<object>> HandleEvent<TResource, TInput>(MutationRequest request, TInput input)
         {
             var reception = new Received<TResource, TInput>(request, input);
 
@@ -143,22 +148,20 @@ namespace Metaflow.Orleans
 
             if (!CreateRequest(request, input) && !State.Exists && ImplicitCreateAllowed())
             {
-                var creationEvent = IsPostDefined() ? await Dispatch<T, T>(MutationRequest.POST, default) : DefaultCreationEvent(request, input);
+                var created = IsPostDefined() ? (await Dispatch<T, T>(MutationRequest.POST, default)) : DefaultCreationEvent();
 
-                await Persist(creationEvent);
+                await Persist(created);
             }
 
-            Result<TResource> result = await Dispatch<TResource, TInput>(request, input);
+            IEnumerable<object> events = await Dispatch<TResource, TInput>(request, input);
 
-            var @event = result.AsEvent(request, input);
-
-            await Persist(@event);
+            await Persist(events);
 
             await Snapshot();
 
-            _telemetry.TrackResult<TResource, TInput>(GetPrimaryKeyString(), result);
+            _telemetry.TrackEvents<TResource, TInput>(GetPrimaryKeyString(), events);
 
-            return result;
+            return events;
         }
 
         private bool IsPostDefined()
@@ -166,12 +169,12 @@ namespace Metaflow.Orleans
             return typeof(T).SelfMethod(MutationRequest.POST) != null;
         }
 
-        private object DefaultCreationEvent<TInput>(MutationRequest request, TInput input)
+        private IEnumerable<object> DefaultCreationEvent()
         {
-            return Result<T>.Created(State.Value).AsEvent(request, input);
+            return new List<object>() { new Created<T>(State.Value) };
         }
 
-        private async Task<Result<TResource>> Dispatch<TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<IEnumerable<object>> Dispatch<TResource, TInput>(MutationRequest request, TInput input)
         {
             return await _dispatcher.Invoke<TResource, TInput>(State.Value, request, input);
         }
@@ -187,11 +190,9 @@ namespace Metaflow.Orleans
             await Persist(failure);
         }
 
-        private Result<TResource> NotFound<TResource, TInput>()
+        private Result NotFound<TResource, TInput>()
         {
-            var result = Result<TResource>.Nok($"Object {GetPrimaryKeyString()} does not exist and does not support implicit creation");
-
-            _telemetry.TrackResult<TResource, TInput>(GetPrimaryKeyString(), result);
+            var result = Result.Nok($"Object {GetPrimaryKeyString()} does not exist and does not support implicit creation");
 
             return result;
         }
@@ -210,10 +211,10 @@ namespace Metaflow.Orleans
             return typeof(T).GetCustomAttributes().OfType<RestfulAttribute>()
                                 .FirstOrDefault()?.AllowImplicitCreate ?? false;
         }
-
-        private async Task Persist(object @event)
+        private Task Persist(object @event) => Persist(new List<object>() { @event });
+        private async Task Persist(IEnumerable<object> events)
         {
-            base.RaiseEvent(@event);
+            base.RaiseEvents(events);
             await ConfirmEvents();
         }
 

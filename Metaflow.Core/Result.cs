@@ -1,37 +1,31 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Metaflow
 {
-
-
-    public readonly struct Result<TResource>
+    public readonly struct Result
     {
         public bool OK { get; }
+        public IReadOnlyCollection<object> Events { get; }
 
-        public TResource Before { get; }
-        public TResource After { get; }
-        public string Reason { get; }
-        public StateChange StateChange { get; }
+        public string Error { get; }
 
-        public static Result<TResource> Created(TResource after) => new Result<TResource>(StateChange.Created, default, after);
-        public static Result<TResource> Replaced(TResource before, TResource after) => new Result<TResource>(StateChange.Replaced, before, after);
-        public static Result<TResource> Deleted(TResource before) => new Result<TResource>(StateChange.Deleted, before, default);
-        public static Result<TResource> Updated(TResource before, TResource after) => new Result<TResource>(StateChange.Updated, before, after);
+        public static Result Ok(IEnumerable<object> events) => new Result(events);
+        public static Result Nok(string reason) => new Result(reason);
 
-        public static Result<TResource> Nok(string reason) => new Result<TResource>(false, change: StateChange.None, reason: reason);
+        public static implicit operator Result(Reject reject) => Nok(reject.Reason);
 
-        public static implicit operator Result<TResource>(Reject reject) => Nok(reject.Reason);
-
-        private Result(StateChange change, TResource before, TResource after) : this(true, change)
+        private Result(IEnumerable<object> events)
         {
-            Before = before;
-            After = after;
+            OK = true;
+            Events = (events?.ToList() ?? new List<object>()).AsReadOnly();
+            Error = string.Empty;
         }
-        private Result(bool ok, StateChange change = StateChange.None, string reason = "")
+        private Result(string error)
         {
-            OK = ok;
-            Reason = reason;
-            StateChange = change;
-            Before = default;
-            After = default;
+            OK = false;
+            Error = error;
+            Events = new List<object>().AsReadOnly();
         }
     }
 }

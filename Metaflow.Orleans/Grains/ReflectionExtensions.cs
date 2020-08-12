@@ -12,7 +12,7 @@ namespace Metaflow
             static bool match(MethodInfo mi, Type grainType, MutationRequest request)
             => mi.Name.ToUpperInvariant() == request.ToString().ToUpperInvariant()
                 && mi.IsPublic
-                && ReturnTypeMatches(mi, grainType)
+                && ReturnTypeMatches(mi)
                 && !mi.GetParameters().Any();
 
             return grainType.GetMethods().FirstOrDefault(mi => match(mi, grainType, request));
@@ -25,7 +25,7 @@ namespace Metaflow
                 var p = mi.GetParameters().ToList();
                 return mi.Name.ToUpperInvariant().StartsWith(MutationRequest.DELETE.ToString().ToUpperInvariant())
                 && mi.IsPublic
-                && mi.ReturnType.GetGenericTypeDefinition() == typeof(Result<>)
+                && ReturnTypeMatches(mi)
                 && p.Count == 1 && p[0].ParameterType == typeof(string);
             };
 
@@ -36,8 +36,9 @@ namespace Metaflow
         {
             static bool match(MethodInfo mi, MutationRequest request, bool matchSignature)
             {
+                var n = mi.Name;
                 var p = mi.GetParameters().ToList();
-                return mi.IsPublic && mi.Name.ToUpperInvariant().StartsWith(request.ToString().ToUpperInvariant()) && p.Count == 1 && (!matchSignature || ReturnTypeMatches(mi, p[0].ParameterType));
+                return mi.IsPublic && mi.Name.ToUpperInvariant().StartsWith(request.ToString().ToUpperInvariant()) && p.Count == 1 && (!matchSignature || ReturnTypeMatches(mi));
             }
 
             return grainType.GetMethods().Where(mi => match(mi, request, matchSignature));
@@ -47,7 +48,7 @@ namespace Metaflow
             static bool match(MethodInfo mi, Type resourceType, Type inputType)
             {
                 var p = mi.GetParameters().ToList();
-                return ReturnTypeMatches(mi, resourceType)
+                return ReturnTypeMatches(mi)
                         && ParameterMatches(mi, inputType);
             }
 
@@ -61,10 +62,8 @@ namespace Metaflow
             return p.Count == 1 && p[0].ParameterType == resourceType;
         }
 
-        private static bool ReturnTypeMatches(MethodInfo mi, Type resourceType)
-        => mi.ReturnType.IsGenericType
-            && mi.ReturnType.GetGenericTypeDefinition() == typeof(Result<>)
-            && mi.ReturnType.GenericTypeArguments[0] == resourceType;
+        private static bool ReturnTypeMatches(MethodInfo mi)
+        => typeof(IEnumerable<object>).IsAssignableFrom(mi.ReturnType);
 
     }
 }

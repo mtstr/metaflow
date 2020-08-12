@@ -20,7 +20,7 @@ namespace Metaflow.Orleans
         {
             var result = await GetGrain(id).Delete();
 
-            return result.OK ? NoContent() : (IActionResult)BadRequest(result.Reason);
+            return result.OK ? NoContent() : (IActionResult)BadRequest(result.Error);
         }
     }
 

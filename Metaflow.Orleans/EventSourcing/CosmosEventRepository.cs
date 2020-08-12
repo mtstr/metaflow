@@ -162,6 +162,9 @@ namespace Metaflow.Orleans
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
                     writer.Formatting = Formatting.None;
+                    
+                    Serializer.NullValueHandling = NullValueHandling.Ignore;
+                    
                     Serializer.Serialize(writer, input);
                     writer.Flush();
                     streamWriter.Flush();
