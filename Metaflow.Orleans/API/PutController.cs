@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -26,30 +27,46 @@ namespace Metaflow.Orleans
             using var streamReader = new StreamReader(this.Request.Body, Encoding.UTF8);
             var body = await streamReader.ReadToEndAsync();
 
-            if (this.Request.Headers.Keys.Contains("Metaflow-Batch"))
+            var options = new JsonSerializerOptions
             {
-                var input = JsonSerializer.Deserialize<List<TResource>>(body);
+                PropertyNameCaseInsensitive = true
+            };
 
-                var results = new List<Result>();
+            options.Converters.Add(new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.Untagged | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags | JsonUnionEncoding.UnwrapOption));
 
-                foreach (var i in input)
-                    results.Add(await grain.Put(i));
+            try
+            {
+                if (this.Request.Headers.Keys.Contains("Metaflow-Batch"))
+                {
+                    var input = JsonSerializer.Deserialize<List<TResource>>(body, options);
 
-                var errors = results.Where(r => !r.OK).ToList();
+                    var results = new List<Result>();
 
-                TGrain state = await grain.Get();
+                    foreach (var i in input)
+                        results.Add(await grain.Put(i));
 
-                return !errors.Any() ? Ok(state) : (IActionResult)BadRequest(new { state, errors });
+                    var errors = results.Where(r => !r.OK).ToList();
+
+                    TGrain state = await grain.Get();
+
+                    return !errors.Any() ? Ok(state) : (IActionResult)BadRequest(new { state, errors });
+                }
+                else
+                {
+
+                    var input = JsonSerializer.Deserialize<TResource>(body, options);
+
+                    Result result = await grain.Put(input);
+
+                    TGrain state = await grain.Get();
+
+                    return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
+
+                }
             }
-            else
+            catch (JsonException jex)
             {
-                var input = JsonSerializer.Deserialize<TResource>(body);
-
-                Result result = await grain.Put(input);
-
-                TGrain state = await grain.Get();
-
-                return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
+                return BadRequest(jex.Message);
             }
         }
 
