@@ -48,7 +48,7 @@ namespace Metaflow.Orleans
             [typeof(DeleteController<,>)] = t => FindTypes(t, MutationRequest.DELETE),
             [typeof(PutController<,>)] = t => FindTypes(t, MutationRequest.PUT),
             [typeof(DeleteByIdController<,>)] = t =>
-                t.GenericDelete().Select(m => m.ReturnType.GenericTypeArguments[0]).ToList(),
+                t.DeleteById().Select(mit => mit.Item2).ToList(),
             [typeof(PatchController<,>)] = t => FindTypes(t, MutationRequest.PATCH),
             [typeof(PostController<,>)] = t =>
             {

@@ -171,6 +171,20 @@ namespace Metaflow.Orleans
 
         private IEnumerable<object> DefaultCreationEvent()
         {
+            if (State.Value == null)
+            {
+                var initializer = typeof(T).GetMethods().FirstOrDefault(mi => mi.IsStatic && mi.IsPublic && mi.Name == "Init" && mi.GetParameters().Count() == 0 && mi.ReturnType == typeof(T));
+
+                if (initializer == null) throw new DispatchException($"No initializer method found for nullable type {typeof(T).Name}");
+                try
+                {
+                    State.Value = (T)initializer.Invoke(null, null);
+                }
+                catch (Exception ex)
+                {
+                    throw new DispatchException($"Failed to initialize value of {typeof(T).Name}", ex);
+                }
+            }
             return new List<object>() { new Created<T>(State.Value) };
         }
 

@@ -18,18 +18,25 @@ namespace Metaflow
             return grainType.GetMethods().FirstOrDefault(mi => match(mi, grainType, request));
         }
 
-        public static IEnumerable<MethodInfo> GenericDelete(this Type grainType)
+        public static IEnumerable<(MethodInfo, Type)> DeleteById(this Type grainType)
         {
-            static bool match(MethodInfo mi, Type grainType)
+            static Type match(MethodInfo mi, Type grainType)
             {
                 var p = mi.GetParameters().ToList();
-                return mi.Name.ToUpperInvariant().StartsWith(MutationRequest.DELETE.ToString().ToUpperInvariant())
+
+                var attr = mi.GetCustomAttributes().OfType<RestfulResourceAttribute>().FirstOrDefault();
+
+                var res = mi.Name.ToUpperInvariant().StartsWith(MutationRequest.DELETE.ToString().ToUpperInvariant())
                 && mi.IsPublic
+                && attr != null
                 && ReturnTypeMatches(mi)
                 && p.Count == 1 && p[0].ParameterType == typeof(string);
+
+                if (res) return attr.ResourceType;
+                else return null;
             };
 
-            return grainType.GetMethods().Where(mi => match(mi, grainType));
+            return grainType.GetMethods().Select(mi => (mi, match(mi, grainType))).Where(mit => mit.Item2 != null);
         }
 
         public static IEnumerable<MethodInfo> MatchingMethods(this Type grainType, MutationRequest request, bool matchSignature = true)

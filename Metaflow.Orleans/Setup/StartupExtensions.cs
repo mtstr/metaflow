@@ -15,7 +15,7 @@ namespace Metaflow.Orleans
             builder
             .AddJsonOptions(options =>{
                 options.JsonSerializerOptions.IgnoreNullValues = true;
-                options.JsonSerializerOptions.Converters.Add(new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.Untagged | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags | JsonUnionEncoding.UnwrapOption ));
+                options.JsonSerializerOptions.Converters.Add(new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.ExternalTag | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags | JsonUnionEncoding.UnwrapOption ));
             })
             .ConfigureApplicationPartManager(apm =>
                     {
