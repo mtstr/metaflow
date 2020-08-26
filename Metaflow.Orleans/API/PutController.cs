@@ -27,12 +27,7 @@ namespace Metaflow.Orleans
             using var streamReader = new StreamReader(this.Request.Body, Encoding.UTF8);
             var body = await streamReader.ReadToEndAsync();
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            options.Converters.Add(new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.Untagged | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags | JsonUnionEncoding.UnwrapOption));
+            var options = new JsonSerializerOptions().Configure();
 
             try
             {
