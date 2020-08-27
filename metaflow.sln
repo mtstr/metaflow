@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Orleans.Tests", "M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Orleans.DefaultHost", "Metaflow.Orleans.DefaultHost\Metaflow.Orleans.DefaultHost.csproj", "{96D90827-CC03-453B-8B17-2AE737EEAD06}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Metaflow.FSharp", "Metaflow.FSharp\Metaflow.FSharp.fsproj", "{5C1C4262-827E-4753-B852-E6C43E02CEE1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,5 +74,17 @@ Global
 		{96D90827-CC03-453B-8B17-2AE737EEAD06}.Release|x64.Build.0 = Release|Any CPU
 		{96D90827-CC03-453B-8B17-2AE737EEAD06}.Release|x86.ActiveCfg = Release|Any CPU
 		{96D90827-CC03-453B-8B17-2AE737EEAD06}.Release|x86.Build.0 = Release|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Debug|x64.Build.0 = Debug|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Debug|x86.Build.0 = Debug|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Release|x64.ActiveCfg = Release|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Release|x64.Build.0 = Release|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Release|x86.ActiveCfg = Release|Any CPU
+		{5C1C4262-827E-4753-B852-E6C43E02CEE1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

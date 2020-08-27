@@ -43,5 +43,8 @@
   <ItemGroup>
     <Compile Remove="Grain.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Metaflow.FSharp\Metaflow.FSharp.fsproj" />
+  </ItemGroup>
 
 </Project>
