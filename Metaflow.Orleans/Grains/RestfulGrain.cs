@@ -15,17 +15,20 @@ namespace Metaflow.Orleans
         private const int SnapshotPeriodity = 20;
 
         private readonly IDispatcher<T> _dispatcher;
+
+        private readonly IQuerySync<T> _querySync;
         private readonly ICustomEventStore _eventStore;
         private readonly ILogger<RestfulGrain<T>> _logger;
         private readonly ITelemetryClient _telemetry;
         private int _latestSnapshotVersion;
 
-        public RestfulGrain(IDispatcher<T> dispatcher, ICustomEventStore eventStore, ILogger<RestfulGrain<T>> logger, ITelemetryClient telemetry)
+        public RestfulGrain(IDispatcher<T> dispatcher, ICustomEventStore eventStore, ILogger<RestfulGrain<T>> logger, ITelemetryClient telemetry, IQuerySync<T> querySync = null)
         {
             _dispatcher = dispatcher;
             _eventStore = eventStore;
             _logger = logger;
             _telemetry = telemetry;
+            _querySync = querySync;
         }
 
         public Task<bool> Exists() => Task.FromResult(State.Exists);
@@ -159,9 +162,19 @@ namespace Metaflow.Orleans
 
             await Snapshot();
 
+            await UpdateQueryStore();
+
             _telemetry.TrackEvents<TResource, TInput>(GetPrimaryKeyString(), events);
 
             return events;
+        }
+
+        private Task UpdateQueryStore()
+        {
+            if (_querySync != null)
+                return _querySync.UpdateQueryStore(GetPrimaryKeyString(), State.Value);
+
+            return Task.CompletedTask;
         }
 
         private bool IsPostDefined()
