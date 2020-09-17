@@ -60,6 +60,8 @@ namespace Metaflow.Orleans
 
                                     services.Scan(s => s.FromAssemblies(metaflowAssemblies).AddClasses(c => c.AssignableTo(typeof(IQueryStore<>))).AsImplementedInterfaces().WithScopedLifetime());
 
+                                    services.AddHttpClient();
+
                                     services.AddSingleton(p =>
                                     {
                                         return new CosmosClient(config.CosmosDb.Endpoint, config.CosmosDb.Key);
