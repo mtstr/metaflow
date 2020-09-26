@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture;
+using FSharp.Data.JsonSchema;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Orleans;
@@ -23,6 +25,12 @@ namespace Metaflow.Orleans
             bool v = await grain.Exists();
 
             return v ? base.Ok(await grain.Get()) : (IActionResult)base.NotFound();
+        }
+
+        [HttpGet("schema")]
+        public virtual async Task<IActionResult> GetSchemaSample(CancellationToken cancellationToken)
+        {
+            return Ok(new Fixture().Create<TState>());
         }
 
         [HttpPost("{id}/queryable")]

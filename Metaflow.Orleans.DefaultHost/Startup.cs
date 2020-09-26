@@ -29,6 +29,7 @@ namespace Metaflow.Orleans.DefaultHost
             services.AddSwaggerGen(c =>
             {
                 c.CustomSchemaIds(type => type.ToString());
+
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Metastore Core API", Version = "v1" });
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
