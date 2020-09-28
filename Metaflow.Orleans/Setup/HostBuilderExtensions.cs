@@ -16,13 +16,13 @@ namespace Metaflow.Orleans
 {
     public static class HostBuilderExtensions
     {
-        public static IHostBuilder AddMetaflow(this IHostBuilder builder)
+        public static IHostBuilder AddMetaflow(this IHostBuilder builder, List<Assembly> assemblies = null)
         {
             builder.UseOrleans((Microsoft.Extensions.Hosting.HostBuilderContext ctx, ISiloBuilder siloBuilder) =>
                             {
                                 var config = ctx.Configuration.GetSection("Metaflow").Get<MetaflowConfig>();
 
-                                var metaflowAssemblies = config.Assemblies.Where(a => !string.IsNullOrEmpty(a)).Select(a => AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(a))).ToList();
+                                var metaflowAssemblies = assemblies ?? config.Assemblies.Where(a => !string.IsNullOrEmpty(a)).Select(a => AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(a))).ToList();
 
 
                                 siloBuilder
