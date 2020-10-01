@@ -32,12 +32,13 @@ namespace Metaflow.Orleans
         }
 
         public Task<bool> Exists() => Task.FromResult(State.Exists);
+        
+        public new int Version => base.Version;
 
         public Task<T> Get()
         {
             return Task.FromResult(State.Value);
         }
-
         public override async Task OnActivateAsync()
         {
             _latestSnapshotVersion = await _eventStore.LatestSnapshotVersion(GetPrimaryKeyString());

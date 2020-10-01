@@ -10,5 +10,7 @@ namespace Metaflow.Orleans
         Task<Result> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request);
 
         Task<bool> Exists();
+
+        public int Version { get; }
     }
 }
