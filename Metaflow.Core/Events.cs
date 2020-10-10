@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace Metaflow
 {
@@ -14,16 +15,16 @@ namespace Metaflow
         public TResource After { get; }
     }
 
-    public readonly struct Ignored<TResource, TInput>
+    public readonly struct Ignored<TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
         public TInput Input { get; }
 
-        public Ignored(MutationRequest request, TInput input)
+        public Ignored(MutationRequest request, string resource, TInput input)
         {
             Request = request.ToString();
-            ResourceType = typeof(TResource).Name;
+            ResourceType = resource;
             Input = input;
         }
     }
@@ -53,7 +54,7 @@ namespace Metaflow
 
     public readonly struct Created<TResource>
     {
-
+        [JsonConstructor]
         public Created(TResource after)
         {
             After = after;
@@ -63,7 +64,7 @@ namespace Metaflow
     }
 
 
-    public readonly struct Rejected<TResource, TInput>
+    public readonly struct Rejected<TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
@@ -71,42 +72,42 @@ namespace Metaflow
 
         public string Reason { get; }
 
-        public Rejected(MutationRequest request, TInput input, string reason)
+        public Rejected(MutationRequest request, string resource, TInput input, string reason)
         {
             Request = request.ToString();
-            ResourceType = typeof(TResource).Name;
+            ResourceType = resource;
             Input = input;
             Reason = reason;
         }
     }
 
-    public readonly struct Failed<TResource, TInput>
+    public readonly struct Failed<TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
         public TInput Input { get; }
         public string Exception { get; }
 
-        public Failed(MutationRequest request, TInput input, string exception)
+        public Failed(MutationRequest request, string resource, TInput input, string exception)
         {
             Request = request.ToString();
-            ResourceType = typeof(TResource).Name;
+            ResourceType = resource;
             Input = input;
             Exception = exception;
         }
     }
 
-    public readonly struct Received<TResource, TInput>
+    public readonly struct Received<TInput>
     {
         public string Request { get; }
         public string ResourceType { get; }
 
         public TInput Input { get; }
 
-        public Received(MutationRequest request, TInput input)
+        public Received(MutationRequest request, string resource, TInput input)
         {
             Request = request.ToString();
-            ResourceType = typeof(TResource).Name;
+            ResourceType = resource;
             Input = input;
         }
     }

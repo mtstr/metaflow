@@ -1,0 +1,26 @@
+version: "3.7"
+
+services:
+  eventstore.db:
+    image: eventstore/eventstore:20.6.0-buster-slim
+
+    environment:
+      - EVENTSTORE_DEV=True
+    ports:
+      - "1113:1113"
+      - "2113:2113"
+    volumes:
+      - type: volume
+        source: eventstore-volume-data
+        target: /var/lib/eventstore-data
+      - type: volume
+        source: eventstore-volume-index
+        target: /var/lib/eventstore-index
+      - type: volume
+        source: eventstore-volume-logs
+        target: /var/log/eventstore
+
+volumes:
+  eventstore-volume-data:
+  eventstore-volume-index:
+  eventstore-volume-logs:

@@ -6,11 +6,11 @@ namespace Metaflow
     {
         public static string Name<T, TInput>(this object @event)
         {
-            if (@event is Created<T>) return "Created";
-            if (@event is Rejected<T, TInput>) return "Rejected";
-            if (@event is Deleted<T>) return "Deleted";
-            if (@event is Ignored<T, TInput>) return "Ignored";
-            if (@event is Replaced<T>) return "Replaced";
+            if (@event is Created<T>) return $"Created:{typeof(T).Name}";
+            if (@event is Rejected<TInput>) return $"Rejected:{typeof(TInput).Name}";
+            if (@event is Deleted<T>) return $"Deleted:{typeof(T).Name}";
+            if (@event is Ignored<TInput>) return $"Ignored:{typeof(TInput).Name}";
+            if (@event is Replaced<T>) return $"Replaced:{typeof(T).Name}";
             return "Unknown";
         }
 

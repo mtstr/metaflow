@@ -5,12 +5,12 @@ using Orleans.EventSourcing.CustomStorage;
 
 namespace Metaflow.Orleans
 {
-    public interface IRestfulGrain<T> : IRestful<T>, IGrainWithStringKey, ICustomStorageInterface<GrainState<T>,object>
+    public interface IRestfulGrain<T> : IRestful<T>, IGrainWithStringKey
     {
         Task<Result> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request);
 
         Task<bool> Exists();
 
-        public int Version { get; }
+        Task<int> GetVersion();
     }
 }

@@ -27,7 +27,7 @@ namespace Metaflow.Orleans
                     ["correlation_id"] = CorrelationId
                 };
 
-                if (@event is Rejected<TResource, TInput> reject)
+                if (@event is Rejected<TInput> reject)
                 {
                     telemetry["success"] = "false";
                     telemetry["reason"] = reject.Reason;

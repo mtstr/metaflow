@@ -1,0 +1,15 @@
+FROM eventstore/eventstore
+USER root
+
+RUN apt-get update -y \
+    &&  apt-get -y install sudo
+  RUN apt-get install -y openssl \
+  && sudo openssl req -x509 -sha256 -nodes -days 3650 -subj "/CN=eventstore.org" -newkey rsa:2048 -keyout eventstore.pem -out eventstore.csr \
+  && sudo openssl pkcs12 -export -inkey eventstore.pem -in eventstore.csr -out eventstore.p12 -passout pass: \
+  && sudo openssl pkcs12 -export -inkey eventstore.pem -in eventstore.csr -out eventstore.pfx -passout pass: \
+  && sudo mkdir -p /usr/local/share/ca-certificates \
+  && sudo cp eventstore.csr /usr/local/share/ca-certificates/eventstore.crt \
+  && sudo update-ca-certificates \
+  && apt-get autoremove \
+  && apt-get clean \
+  && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

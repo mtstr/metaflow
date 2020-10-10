@@ -8,7 +8,7 @@ namespace Metaflow.Orleans
         public string ClusterName { get; set; }
         public bool Local { get; set; }
         public string AzureStorage { get; set; }
-        public CosmosDbConfig CosmosDb { get; set; }
+        public EventStoreConfig EventStore { get; set; }
 
         public int GatewayPort { get; set; } = 30000;
         public int SiloPort { get; set; } = 11111;
