@@ -19,7 +19,7 @@ namespace Metaflow.Orleans
             foreach (var @event in events)
             {
 
-                Dictionary<string, string> telemetry = new Dictionary<string, string>
+                var telemetry = new Dictionary<string, string>
                 {
                     ["resource"] = typeof(TResource).Name,
                     ["input"] = typeof(TInput).Name,

@@ -40,9 +40,9 @@ namespace Metaflow.Orleans
 
         public static IMvcBuilder AddMetaflow(this IMvcBuilder builder, IEnumerable<Assembly> assemblies)
         {
-            var types = assemblies.SelectMany(a => a.GetExportedTypes()).ToList();
+            List<Type> types = assemblies.SelectMany(a => a.GetExportedTypes()).ToList();
 
-            var resourceTypes = types.Where(t => t.GetCustomAttributes().Any(a => a is RestfulAttribute)).ToList();
+            List<Type> resourceTypes = types.Where(t => t.GetCustomAttributes().Any(a => a is RestfulAttribute)).ToList();
 
             return builder.AddMetaflow(resourceTypes);
         }

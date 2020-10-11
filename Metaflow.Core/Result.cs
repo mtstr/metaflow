@@ -10,16 +10,17 @@ namespace Metaflow
 
         public string Error { get; }
 
-        public static Result Ok(IEnumerable<object> events) => new Result(events);
+        public static Result Ok(IEnumerable<object> events) => new Result(true, events);
         public static Result Nok(string reason) => new Result(reason);
+        public static Result Nok(IEnumerable<object> events, string message = "") => new Result(false, events, message);
 
         public static implicit operator Result(Reject reject) => Nok(reject.Reason);
 
-        private Result(IEnumerable<object> events)
+        private Result(bool ok, IEnumerable<object> events, string message = "")
         {
-            OK = true;
+            OK = ok;
             Events = (events?.ToList() ?? new List<object>()).AsReadOnly();
-            Error = string.Empty;
+            Error = message;
         }
         private Result(string error)
         {

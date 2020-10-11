@@ -1,78 +1,73 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Client;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Orleans;
 using Orleans.EventSourcing;
 using Orleans.EventSourcing.CustomStorage;
 
 namespace Metaflow.Orleans
 {
-    public class RestfulGrain<T> : JournaledGrain<GrainState<T>>, IRestfulGrain<T>, ICustomStorageInterface<GrainState<T>, object>
+
+    public class RestfulGrain<T> : JournaledGrain<GrainState<T>>, IRestfulGrain<T>,
+        ICustomStorageInterface<GrainState<T>, object>
     {
         private readonly IDispatcher<T> _dispatcher;
         private readonly IQuerySync<T> _querySync;
+        private readonly IClusterClient _clusterClient;
+        private readonly UpgradeMap _upgradeMap;
         private readonly EventStoreClient _eventStore;
         private readonly ILogger<RestfulGrain<T>> _logger;
         private readonly ITelemetryClient _telemetry;
         private string _stream;
-        private IEventSerializer _eventSerializer;
+        private readonly IEventSerializer _eventSerializer;
 
         public RestfulGrain(IDispatcher<T> dispatcher, EventStoreClient eventStore, ILogger<RestfulGrain<T>> logger,
-            ITelemetryClient telemetry, IEventSerializer eventSerializer, IQuerySync<T> querySync = null)
+            ITelemetryClient telemetry, IEventSerializer eventSerializer, IClusterClient clusterClient,
+            UpgradeMap upgradeMap, IQuerySync<T> querySync = null)
         {
             _dispatcher = dispatcher;
             _eventStore = eventStore;
             _logger = logger;
             _telemetry = telemetry;
             _eventSerializer = eventSerializer;
+            _clusterClient = clusterClient;
+            _upgradeMap = upgradeMap;
             _querySync = querySync;
         }
 
-        public Task<bool> Exists() => Task.FromResult(State.Exists);
+        public Task<object> GetState() => Task.FromResult((object)State.Value);
+        public async Task<bool> Exists()
+        {
+            if (ModelVersion() == 1) return State.Exists;
+
+            if (!State.Exists) await Upgrade();
+
+            return State.Exists;
+        }
 
         public Task<int> GetVersion() => Task.FromResult(base.Version);
 
-        public Task<T> Get()
+        public async Task<T> Get()
         {
-            return Task.FromResult(State.Value);
+            if (ModelVersion() == 1) return State.Value;
+
+            if (!State.Exists) await Upgrade();
+
+            return State.Value;
         }
 
         public override async Task OnDeactivateAsync()
         {
-            // await ConfirmEvents();
             await base.OnDeactivateAsync();
         }
 
         public override async Task OnActivateAsync()
         {
-            //     _stream = $"{typeof(T).Name}:{this.GetPrimaryKeyString()}";
-
-            //     var stream = _eventStore.ReadStreamAsync(
-            //         Direction.Forwards,
-            //         _stream,
-            //         StreamPosition.Start);
-
-            //     if (await stream.ReadState != ReadState.StreamNotFound)
-            //     {
-            //         await foreach (var resolvedEvent in stream)
-            //         {
-            //             var json = Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span);
-
-            //             object eventObj = _eventSerializer.Deserialize(typeof(T), resolvedEvent.Event.EventType, json);
-
-            //             if (eventObj != null) base.RaiseEvent(eventObj);
-            //         }
-            //     }
-
-            //     await ConfirmEvents();
             await base.OnActivateAsync();
         }
 
@@ -120,7 +115,7 @@ namespace Metaflow.Orleans
 
         private async Task<Result> Handle<TResource, TInput>(MutationRequest request, TInput input)
         {
-            _telemetry.TrackRequest<TResource, TInput>(request, GetPrimaryKeyString());
+            _telemetry.TrackRequest<TResource, TInput>(request, GrainId());
 
             if (!CreateRequest(request, input) && !State.Exists && !ImplicitCreateAllowed())
             {
@@ -129,13 +124,15 @@ namespace Metaflow.Orleans
 
             try
             {
-                return Result.Ok(await HandleEvent<TResource, TInput>(request, input));
+                var events = await HandleEvent<TResource, TInput>(request, input);
+                var success = !events.Any(e => e is Rejected<TInput>);
+                return success ? Result.Ok(events) : Result.Nok(events);
             }
             catch (Exception ex)
             {
                 await HandleException<TResource, TInput>(request, input, ex);
 
-                throw ex;
+                throw;
             }
         }
 
@@ -150,31 +147,70 @@ namespace Metaflow.Orleans
 
             await Persist(new EventDto() { Name = $"Received:{typeof(TInput).Name}", Event = reception });
 
-            if (!CreateRequest(request, input) && !State.Exists && ImplicitCreateAllowed())
+            if (!State.Exists && !CreateRequest(request, input))
             {
-                var created = IsPostDefined()
-                    ? (await Dispatch<T, T>(MutationRequest.POST, default))
-                    : DefaultCreationEvent();
+                if (ModelVersion() == 1)
+                {
+                    if (ImplicitCreateAllowed())
+                    {
+                        IEnumerable<object> created = IsPostDefined()
+                            ? (await Dispatch<T, T>(MutationRequest.POST, default))
+                            : DefaultCreationEvent();
 
-                await Persist<TResource, TInput>(created);
+                        await Persist<TResource, TInput>(created);
+                    }
+                }
+                else
+                {
+                    await Upgrade();
+                }
             }
 
             IEnumerable<object> events = await Dispatch<TResource, TInput>(request, input);
 
-            var handleEvent = events.ToList();
+            List<object> handleEvent = events.ToList();
+
             await Persist<TResource, TInput>(handleEvent);
 
             await UpdateQueryStore();
 
-            _telemetry.TrackEvents<TResource, TInput>(GetPrimaryKeyString(), handleEvent);
+            _telemetry.TrackEvents<TResource, TInput>(GrainId(), handleEvent);
 
             return handleEvent;
+        }
+
+        private async Task Upgrade()
+        {
+            _logger.LogInformation("Entity upgrade triggered");
+
+            Type baseType = _upgradeMap.For<T>();
+            Type type = typeof(T);
+
+            if (baseType != null)
+            {
+                if (_clusterClient.GetGrain(
+                    typeof(IRestfulGrain<>).MakeGenericType(baseType),
+                    GrainId()) is IRestfulGrain baseGrain && await baseGrain.Exists())
+                {
+                    var upgradedState = (T)type.GetMethod("Upgrade")
+                        .Invoke(null, new[] { await baseGrain.GetState() });
+
+                    var upgradeEvent = new List<object>() { new Upgraded<T>(upgradedState) };
+
+                    await Persist<T, T>(upgradeEvent);
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"Upgrade base not found {type.Name} v{type.ModelVersion()}");
+            }
+
         }
 
         private Task UpdateQueryStore()
         {
             if (_querySync != null)
-                return _querySync.UpdateQueryStore(GetPrimaryKeyString(), State.Value);
+                return _querySync.UpdateQueryStore(GrainId(), State.Value);
 
             return Task.CompletedTask;
         }
@@ -218,7 +254,7 @@ namespace Metaflow.Orleans
 
             _logger.LogError(30001, ex, "Exception in event handling");
 
-            _telemetry.TrackException<TResource, TInput>(request, GetPrimaryKeyString(), ex);
+            _telemetry.TrackException<TResource, TInput>(request, GrainId(), ex);
 
             await Persist(new List<EventDto>()
                 {new EventDto() {Name = $"Failed:{typeof(TInput).Name}", Event = failure}});
@@ -227,7 +263,7 @@ namespace Metaflow.Orleans
         private Result NotFound<TResource, TInput>()
         {
             var result =
-                Result.Nok($"Object {GetPrimaryKeyString()} does not exist and does not support implicit creation");
+                Result.Nok($"Object {GrainId()} does not exist and does not support implicit creation");
 
             return result;
         }
@@ -235,10 +271,8 @@ namespace Metaflow.Orleans
 
         private static bool ImplicitCreateAllowed()
         {
-            return typeof(T).GetCustomAttributes().OfType<RestfulAttribute>()
-                .FirstOrDefault()?.AllowImplicitCreate ?? false;
+            return typeof(T).RestfulAttribute()?.AllowImplicitCreate ?? false;
         }
-
 
         private Task Persist<TResource, TInput>(IEnumerable<object> events)
         {
@@ -257,14 +291,14 @@ namespace Metaflow.Orleans
             await ConfirmEvents();
         }
 
-        private string GetPrimaryKeyString()
+        private string GrainId()
         {
             return GrainReference.GrainIdentity.PrimaryKeyString;
         }
 
         public async Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage()
         {
-            _stream = $"{typeof(T).Name}:{this.GetPrimaryKeyString()}";
+            _stream = $"{typeof(T).Name}:{ModelVersion()}:{this.GrainId()}";
 
             var stream = _eventStore.ReadStreamAsync(
                 Direction.Forwards,
@@ -280,7 +314,7 @@ namespace Metaflow.Orleans
                 {
                     var json = Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span);
 
-                    object eventObj = _eventSerializer.Deserialize(typeof(T), resolvedEvent.Event.EventType, json);
+                    var eventObj = _eventSerializer.Deserialize(typeof(T), resolvedEvent.Event.EventType, json);
 
                     if (eventObj != null)
                     {
@@ -288,26 +322,33 @@ namespace Metaflow.Orleans
                         version++;
                     }
                 }
-
             }
 
             return new KeyValuePair<int, GrainState<T>>(version, state);
         }
 
+        private int ModelVersion()
+        {
+            return typeof(T).ModelVersion();
+        }
+
+
         public async Task<bool> ApplyUpdatesToStorage(IReadOnlyList<object> updates, int expectedversion)
         {
             try
             {
-                var enumerable = updates.OfType<EventDto>().ToList();
+                List<EventDto> enumerable = updates.OfType<EventDto>().ToList();
 
-                var events = enumerable.Select(ed =>
+                List<EventData> events = enumerable.Select(ed =>
                 {
-                    var json = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(ed.Event, options: new JsonSerializerOptions().Configure()));
+                    byte[] json = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(ed.Event,
+                        options: new JsonSerializerOptions().Configure()));
 
                     return new EventData(Uuid.NewUuid(), ed.Name, json);
                 }).ToList();
 
-                await _eventStore.AppendToStreamAsync(_stream, expectedversion == 0 ? StreamRevision.None : Convert.ToUInt64(expectedversion - 1), events);
+                await _eventStore.AppendToStreamAsync(_stream,
+                    expectedversion == 0 ? StreamRevision.None : Convert.ToUInt64(expectedversion - 1), events);
 
                 return true;
             }
@@ -315,56 +356,6 @@ namespace Metaflow.Orleans
             {
                 return false;
             }
-        }
-    }
-
-    internal class EventDto
-    {
-        public string Name { get; set; }
-        public object Event { get; set; }
-    }
-
-    public interface IEventSerializer
-    {
-        object Deserialize(Type type, string eventType, string json);
-    }
-
-    class EventSerializer : IEventSerializer
-    {
-        private static Type ResolvePropertyType(PropertyInfo pi)
-        {
-            var t = pi.PropertyType;
-            if (t.IsGenericType && t.IsAssignableTo(typeof(IEnumerable)))
-            {
-                return t.GetGenericArguments().First();
-            }
-
-            return t;
-        }
-
-        public object Deserialize(Type type, string eventType, string json)
-        {
-            var split = eventType.Split(":");
-            var (action, data) = (split[0], split[1]);
-            var ownedTypes = type.GetProperties().Select(ResolvePropertyType).ToList();
-            var eventDataType = ownedTypes.FirstOrDefault(ot => ot.Name == data);
-            var targetType = (action, data) switch
-            {
-                ("Created", _) when data == type.Name => typeof(Created<>).MakeGenericType(type),
-                ("Created", _) when eventDataType != null => typeof(Created<>).MakeGenericType(eventDataType),
-                ("Replaced", _) when eventDataType != null => typeof(Replaced<>).MakeGenericType(eventDataType),
-                ("Deleted", _) when eventDataType != null => typeof(Deleted<>).MakeGenericType(eventDataType),
-                ("Deleted", _) when data == type.Name => typeof(Created<>).MakeGenericType(type),
-                _ => null
-            };
-
-            if (targetType != null)
-            {
-                var e = System.Text.Json.JsonSerializer.Deserialize(json, targetType, new JsonSerializerOptions().Configure());
-                return e;
-            }
-
-            return null;
         }
     }
 }

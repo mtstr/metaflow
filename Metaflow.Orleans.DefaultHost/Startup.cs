@@ -88,7 +88,7 @@ namespace Metaflow.Orleans.DefaultHost
                 ResponseWriter = async (context, report) =>
                 {
                     context.Response.ContentType = "application/json; charset=utf-8";
-                    var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(report));
+                    byte[]? bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(report));
 
                     await context.Response.Body.WriteAsync(bytes);
                 }

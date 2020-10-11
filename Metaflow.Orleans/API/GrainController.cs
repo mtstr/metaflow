@@ -31,7 +31,7 @@ namespace Metaflow.Orleans
         {
             IRestfulGrain<TState> grain = GetGrain(id);
 
-            Result result = await grain.Execute(new CustomRequest<TResource, TInput>(type, input));
+            var result = await grain.Execute(new CustomRequest<TResource, TInput>(type, input));
             return responseFunc(await grain.Get(), result);
         }
 

@@ -22,7 +22,7 @@ namespace Metaflow.Orleans
         {
             IRestfulGrain<TState> grain = GetGrain(id);
 
-            bool v = await grain.Exists();
+            var v = await grain.Exists();
 
             return v ? base.Ok(await grain.Get()) : (IActionResult)base.NotFound();
         }
@@ -38,7 +38,7 @@ namespace Metaflow.Orleans
         {
             IRestfulGrain<TState> grain = GetGrain(id);
 
-            bool v = await grain.Exists();
+            var v = await grain.Exists();
 
             if (v && _querySync != null) await _querySync.UpdateQueryStore(id, await grain.Get());
 

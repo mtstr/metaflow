@@ -9,7 +9,7 @@ namespace Metaflow
         public override Maybe<T> Read(
             ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            T? t = JsonSerializer.Deserialize<T?>(ref reader, options);
+            var t = JsonSerializer.Deserialize<T?>(ref reader, options);
 
             return t.Maybe();
         }

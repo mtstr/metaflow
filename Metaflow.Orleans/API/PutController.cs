@@ -22,7 +22,7 @@ namespace Metaflow.Orleans
         [HttpPut(DefaultActionConvention.DefaultRoute)]
         public virtual async Task<IActionResult> Respond(string id, CancellationToken cancellationToken)
         {
-            var grain = GetGrain(id);
+            IRestfulGrain<TGrain> grain = GetGrain(id);
 
             using var streamReader = new StreamReader(this.Request.Body, Encoding.UTF8);
             var body = await streamReader.ReadToEndAsync();
@@ -40,9 +40,9 @@ namespace Metaflow.Orleans
                     foreach (var i in input)
                         results.Add(await grain.Put(i));
 
-                    var errors = results.Where(r => !r.OK).ToList();
+                    List<Result> errors = results.Where(r => !r.OK).ToList();
 
-                    TGrain state = await grain.Get();
+                    var state = await grain.Get();
 
                     return !errors.Any() ? Ok(state) : (IActionResult)BadRequest(new { state, errors });
                 }
@@ -51,9 +51,9 @@ namespace Metaflow.Orleans
 
                     var input = JsonSerializer.Deserialize<TResource>(body, options);
 
-                    Result result = await grain.Put(input);
+                    var result = await grain.Put(input);
 
-                    TGrain state = await grain.Get();
+                    var state = await grain.Get();
 
                     return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
 

@@ -20,15 +20,18 @@ namespace Metaflow.Orleans
 
         public void PopulateFeature(IEnumerable<ApplicationPart> parts, ControllerFeature feature)
         {
-            foreach (var entityType in _grainTypes)
+            List<Type> entityTypes = _grainTypes.GroupBy(gt => gt.Name)
+                .Select(g => g.OrderByDescending(gi => gi.ModelVersion()).First()).ToList();
+            
+            foreach (var entityType in entityTypes)
             {
-                foreach (var kv in typeResolvers)
+                foreach (KeyValuePair<Type, Func<Type, List<Type>>> kv in typeResolvers)
                 {
-                    var types = kv.Value(entityType);
+                    List<Type> types = kv.Value(entityType);
 
                     foreach (var t in types)
                     {
-                        TypeInfo controllerType = BuildClosedGenericControllerType(kv.Key, entityType, t).GetTypeInfo();
+                        var controllerType = BuildClosedGenericControllerType(kv.Key, entityType, t).GetTypeInfo();
 
                         // if same or derived controller already defined
                         if (feature.Controllers.Any(c => controllerType.IsAssignableFrom(c)))
@@ -42,35 +45,36 @@ namespace Metaflow.Orleans
             }
         }
 
-        private static readonly Dictionary<Type, Func<Type, List<Type>>> typeResolvers = new Dictionary<Type, Func<Type, List<Type>>>
-        {
-            [typeof(GetController<>)] = t => new List<Type>() { t },
-            [typeof(DeleteController<,>)] = t => FindTypes(t, MutationRequest.DELETE),
-            [typeof(PutController<,>)] = t => FindTypes(t, MutationRequest.PUT),
-            [typeof(DeleteByIdController<,>)] = t =>
-                t.DeleteById().Select(mit => mit.Item2).ToList(),
-            [typeof(PatchController<,>)] = t => FindTypes(t, MutationRequest.PATCH),
-            [typeof(PostController<,>)] = t =>
+        private static readonly Dictionary<Type, Func<Type, List<Type>>> typeResolvers =
+            new Dictionary<Type, Func<Type, List<Type>>>
             {
-                var selfCreate = t.SelfMethod(MutationRequest.POST);
-                var all = FindTypes(t, MutationRequest.POST);
+                [typeof(GetController<>)] = t => new List<Type>() {t},
+                [typeof(DeleteController<,>)] = t => FindTypes(t, MutationRequest.DELETE),
+                [typeof(PutController<,>)] = t => FindTypes(t, MutationRequest.PUT),
+                [typeof(DeleteByIdController<,>)] = t =>
+                    t.DeleteById().Select(mit => mit.Item2).ToList(),
+                [typeof(PatchController<,>)] = t => FindTypes(t, MutationRequest.PATCH),
+                [typeof(PostController<,>)] = t =>
+                {
+                    var selfCreate = t.SelfMethod(MutationRequest.POST);
+                    List<Type> all = FindTypes(t, MutationRequest.POST);
 
-                if (selfCreate != null)
-                    all.Add(t);
+                    if (selfCreate != null)
+                        all.Add(t);
 
-                return all;
-            },
-            [typeof(DeleteSelfController<>)] = t =>
-            {
-                var selfDeleteAvailable = t.SelfMethod(MutationRequest.DELETE);
-                if (selfDeleteAvailable != null) return new List<Type>() { t };
-                return new List<Type>();
-            }
-        };
+                    return all;
+                },
+                [typeof(DeleteSelfController<>)] = t =>
+                {
+                    var selfDeleteAvailable = t.SelfMethod(MutationRequest.DELETE);
+                    if (selfDeleteAvailable != null) return new List<Type>() {t};
+                    return new List<Type>();
+                }
+            };
 
         private static List<Type> FindTypes(Type t, MutationRequest request)
         {
-            var all = t.MatchingMethods(request).ToList();
+            List<MethodInfo> all = t.MatchingMethods(request).ToList();
 
             return all.Select(mi => ResolveType(t, mi, request)).Where(t => t != null).ToList();
         }
@@ -82,16 +86,17 @@ namespace Metaflow.Orleans
             if (request != MutationRequest.PATCH) return parameterType;
 
             return grainType.GetCustomAttributes().OfType<RestfulAttribute>()
-                                            .FirstOrDefault()?.DeltaType;
+                .FirstOrDefault()?.DeltaType;
         }
 
         private static Type BuildClosedGenericControllerType(Type openControllerType, Type grainType, Type resourceType)
         {
-            List<Type> genericTypeParams = new List<Type> { grainType };
+            var genericTypeParams = new List<Type> {grainType};
 
-            if (resourceType != grainType || openControllerType.GetGenericTypeDefinition() == typeof(PostController<,>)) genericTypeParams.Add(resourceType);
+            if (resourceType != grainType || openControllerType.GetGenericTypeDefinition() == typeof(PostController<,>))
+                genericTypeParams.Add(resourceType);
 
-            Type genericControllerType = openControllerType.MakeGenericType(genericTypeParams.ToArray());
+            var genericControllerType = openControllerType.MakeGenericType(genericTypeParams.ToArray());
 
             return genericControllerType;
         }

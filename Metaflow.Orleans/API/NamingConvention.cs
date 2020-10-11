@@ -8,7 +8,7 @@ namespace Metaflow.Orleans
     {
         public void Apply(ControllerModel controller)
         {
-            var (grainType, resourceType) = controller.ControllerTypes();
+            (var grainType, var resourceType) = controller.ControllerTypes();
             if (grainType == null || resourceType == null) return;
 
             controller.ControllerName = grainType.Name;

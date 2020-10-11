@@ -42,7 +42,7 @@ namespace Metaflow
 
         public static async Task<IEnumerable<TResult>> Traverse<T, TResult>(this Task<Maybe<T>> source, Func<T, IEnumerable<TResult>> f) where T : struct
         {
-            var t = await source;
+            Maybe<T> t = await source;
 
             return t.Traverse(f);
         }
@@ -66,7 +66,7 @@ namespace Metaflow
             TResult nothing,
             Func<T, TResult> just) where T : struct
         {
-            var m = await task;
+            Maybe<T> m = await task;
             return m.Match(nothing: nothing, just: just);
         }
 
@@ -74,7 +74,7 @@ namespace Metaflow
             this Task<Maybe<T>> source,
             Func<T, TResult> selector) where T : struct where TResult : struct
         {
-            var m = await source;
+            Maybe<T> m = await source;
             return m.Map(selector);
         }
 
@@ -82,7 +82,7 @@ namespace Metaflow
             this Task<IEnumerable<T>> source,
             Func<T, TResult> selector)
         {
-            var m = await source;
+            IEnumerable<T> m = await source;
             return m.Select(selector);
         }
 
@@ -107,7 +107,7 @@ namespace Metaflow
 
         public static async Task<T> PassThrough<T>(this Task<T> task, Func<T, Task> f)
         {
-            T t = await task;
+            var t = await task;
 
             await f(t);
 
@@ -126,7 +126,7 @@ namespace Metaflow
 
         public static async Task<IEnumerable<T>> PassThrough<T>(this Task<IEnumerable<T>> task, Func<T, Task> f)
         {
-            var t = await task;
+            IEnumerable<T> t = await task;
 
             foreach (var a in t)
                 await f(a);
@@ -136,7 +136,7 @@ namespace Metaflow
 
         public static async Task<Maybe<T>> Bind<T>(this Task<IEnumerable<T>> task, Func<IEnumerable<T>, T?> f) where T : struct
         {
-            var list = await task;
+            IEnumerable<T> list = await task;
 
             return f(list).Maybe();
         }
@@ -163,7 +163,7 @@ namespace Metaflow
 
             foreach (var a in await task)
             {
-                var c = await f(a).Match(nothing, v => v);
+                TResult c = await f(a).Match(nothing, v => v);
 
                 if (!c.Equals(nothing)) result.Add(c);
             }
@@ -178,7 +178,7 @@ namespace Metaflow
 
             foreach (var a in await task)
             {
-                var c = await f(a).Match(nothing, v => v);
+                TResult c = await f(a).Match(nothing, v => v);
 
                 if (!isNothing(c))
                     result.Add(c);

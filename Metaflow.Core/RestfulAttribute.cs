@@ -20,11 +20,14 @@ namespace Metaflow
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public class RestfulAttribute : Attribute
     {
-        public RestfulAttribute()
+        public RestfulAttribute(int version = 1)
         {
+            this.Version = version;
         }
 
-        public RestfulAttribute(Type deltaType)
+        public int Version { get; }
+
+        public RestfulAttribute(Type deltaType, int version = 1): this(version)
         {
             DeltaType = deltaType;
         }

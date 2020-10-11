@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using Orleans;
 using static Metaflow.MutationRequest;
 namespace Metaflow
 {
     public class ReflectionDispatcher<T> : IDispatcher<T>
 
     {
+        
+
+
         public virtual Task<IEnumerable<object>> Invoke<TResource, TInput>(T resourceOwner, MutationRequest request, TInput input)
         {
             static bool implicitCreation() => typeof(TResource) == typeof(T) && typeof(TInput) == typeof(T);
@@ -22,15 +26,16 @@ namespace Metaflow
             };
         }
 
+
         private Task<IEnumerable<object>> DispatchSelf<TResource>(T owner, MutationRequest request)
         {
-            MethodInfo mi = typeof(T).SelfMethod(request);
+            var mi = typeof(T).SelfMethod(request);
 
             if (mi == null) ThrowForMissingMethod(request);
 
-            MethodCallExpression methodCall = Expression.Call(Expression.Constant(owner), mi);
+            var methodCall = Expression.Call(Expression.Constant(owner), mi);
 
-            ParameterExpression stateParam = Expression.Parameter(typeof(T));
+            var stateParam = Expression.Parameter(typeof(T));
 
             Func<T, IEnumerable<object>> lambda = Expression.Lambda<Func<T, IEnumerable<object>>>(methodCall, stateParam).Compile();
 
@@ -44,15 +49,15 @@ namespace Metaflow
 
         private static Task<IEnumerable<object>> Dispatch<TResource, TInput>(T owner, MutationRequest request, TInput input)
         {
-            MethodInfo mi = typeof(T).MatchingMethods(request, false).For(typeof(TResource), typeof(TInput));
+            var mi = typeof(T).MatchingMethods(request, false).For(typeof(TResource), typeof(TInput));
 
             if (mi == null) ThrowForMissingMethod(request);
 
-            ParameterExpression inputParam = Expression.Parameter(typeof(TInput));
+            var inputParam = Expression.Parameter(typeof(TInput));
 
-            MethodCallExpression methodCall = Expression.Call(Expression.Constant(owner), mi, inputParam);
+            var methodCall = Expression.Call(Expression.Constant(owner), mi, inputParam);
 
-            ParameterExpression stateParam = Expression.Parameter(typeof(T));
+            var stateParam = Expression.Parameter(typeof(T));
 
             Func<T, TInput, IEnumerable<object>> lambda = Expression.Lambda<Func<T, TInput, IEnumerable<object>>>(methodCall, stateParam, inputParam).Compile();
 

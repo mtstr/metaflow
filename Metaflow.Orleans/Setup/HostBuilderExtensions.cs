@@ -25,7 +25,7 @@ namespace Metaflow.Orleans
             {
                 var config = ctx.Configuration.GetSection("Metaflow").Get<MetaflowConfig>();
 
-                var metaflowAssemblies = assemblies ?? config.Assemblies.Where(a => !string.IsNullOrEmpty(a))
+                List<Assembly> metaflowAssemblies = assemblies ?? config.Assemblies.Where(a => !string.IsNullOrEmpty(a))
                     .Select(a => AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(a))).ToList();
 
 
@@ -70,7 +70,12 @@ namespace Metaflow.Orleans
                         services.AddHttpClient();
 
                         services.AddSingleton<IEventSerializer, EventSerializer>();
-
+                        services.AddSingleton(_ =>
+                        {
+                            List<Type> types = metaflowAssemblies.SelectMany(a => a.GetExportedTypes()).ToList();
+                            List<Type> resourceTypes = types.Where(t => t.GetCustomAttributes().Any(a => a is RestfulAttribute)).ToList();
+                            return UpgradeMap.Initialize(resourceTypes);
+                        });
                         services.AddEventStoreClient(settings =>
                         {
                             settings.ConnectivitySettings.Address = new Uri(config.EventStore.Endpoint);

@@ -17,13 +17,13 @@ namespace Metaflow.Orleans
         [HttpPost(DefaultActionConvention.DefaultRoute)]
         public virtual async Task<IActionResult> Respond(string id, TResource input, CancellationToken cancellationToken)
         {
-            var grain = GetGrain(id);
+            IRestfulGrain<TGrain> grain = GetGrain(id);
 
             if (input is TGrain && await grain.Exists()) return Conflict();
 
-            Result result = await grain.Post(input);
+            var result = await grain.Post(input);
 
-            TGrain state = await grain.Get();
+            var state = await grain.Get();
 
             return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
         }

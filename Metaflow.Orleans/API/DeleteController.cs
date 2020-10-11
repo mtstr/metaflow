@@ -19,11 +19,11 @@ namespace Metaflow.Orleans
         [HttpDelete(DefaultActionConvention.DefaultRoute)]
         public virtual async Task<IActionResult> Delete(string id, TResource resource, CancellationToken cancellationToken)
         {
-            var grain = GetGrain(id);
+            IRestfulGrain<TGrain> grain = GetGrain(id);
 
             var result = await grain.Delete<TResource>(resource);
 
-            TGrain state = await grain.Get();
+            var state = await grain.Get();
 
             return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
         }

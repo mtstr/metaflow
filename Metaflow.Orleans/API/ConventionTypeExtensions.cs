@@ -9,7 +9,7 @@ namespace Metaflow.Orleans
         {
             if (controller.ControllerType.BaseType.IsGenericType && controller.ControllerType.BaseType.GetGenericTypeDefinition() == typeof(GrainController<,>))
             {
-                var ga = controller.ControllerType.BaseType.GenericTypeArguments;
+                Type[] ga = controller.ControllerType.BaseType.GenericTypeArguments;
                 return (ga[0], ga[1]);
             }
 

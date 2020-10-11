@@ -22,6 +22,7 @@ namespace Metaflow.Orleans
 
             if (controller.ControllerType.IsGenericType && controller.ControllerType.GetGenericTypeDefinition() == typeof(DeleteByIdController<,>))
                 routeAttr.Template = "{id}/" + resourceType.Name.ToLowerInvariant() + "/{itemId}";
+
         }
 
     }

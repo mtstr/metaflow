@@ -17,11 +17,11 @@ namespace Metaflow.Orleans
         [HttpPatch(DefaultActionConvention.DefaultRoute)]
         public virtual async Task<IActionResult> Respond(string id, TInput input, CancellationToken cancellationToken)
         {
-            var grain = GetGrain(id);
+            IRestfulGrain<TGrain> grain = GetGrain(id);
 
-            Result result = await grain.Patch(input);
+            var result = await grain.Patch(input);
 
-            TGrain state = await grain.Get();
+            var state = await grain.Get();
 
             return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
         }
