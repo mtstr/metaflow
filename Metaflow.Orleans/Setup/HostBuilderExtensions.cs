@@ -36,7 +36,6 @@ namespace Metaflow.Orleans
                         opts.ClusterId = $"{config.ClusterName}Cluster";
                         opts.ServiceId = $"{config.ClusterName}Service";
                     })
-                    .AddStateStorageBasedLogConsistencyProviderAsDefault()
                     .ConfigureApplicationParts(parts =>
                     {
                         parts.AddApplicationPart(typeof(IRestfulGrain<>).Assembly).WithCodeGeneration();
