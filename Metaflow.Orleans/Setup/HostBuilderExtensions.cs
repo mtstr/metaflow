@@ -58,14 +58,6 @@ namespace Metaflow.Orleans
                         services.AddControllers()
                             .AddMetaflow(metaflowAssemblies);
 
-                        services.Scan(s =>
-                            s.FromAssemblies(metaflowAssemblies).AddClasses(c => c.AssignableTo(typeof(IQuerySync<>)))
-                                .AsImplementedInterfaces().WithScopedLifetime());
-
-                        services.Scan(s =>
-                            s.FromAssemblies(metaflowAssemblies).AddClasses(c => c.AssignableTo(typeof(IQueryStore<>)))
-                                .AsImplementedInterfaces().WithScopedLifetime());
-
                         services.AddHttpClient();
 
                         services.AddSingleton<IEventSerializer, EventSerializer>();

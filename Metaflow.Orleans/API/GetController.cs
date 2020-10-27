@@ -11,10 +11,8 @@ namespace Metaflow.Orleans
 {
     public class GetController<TState> : GrainController<TState, TState>
     {
-        private readonly IQuerySync<TState> _querySync;
-        public GetController(IClusterClient clusterClient, IQuerySync<TState> querySync = null) : base(clusterClient)
+        public GetController(IClusterClient clusterClient) : base(clusterClient)
         {
-            _querySync = querySync;
         }
 
         [HttpGet("{id}")]
@@ -28,21 +26,9 @@ namespace Metaflow.Orleans
         }
 
         [HttpGet("schema")]
-        public virtual async Task<IActionResult> GetSchemaSample(CancellationToken cancellationToken)
+        public virtual IActionResult GetSchemaSample(CancellationToken cancellationToken)
         {
             return Ok(new Fixture().Create<TState>());
-        }
-
-        [HttpPost("{id}/queryable")]
-        public virtual async Task<IActionResult> Post(string id, CancellationToken cancellationToken)
-        {
-            IRestfulGrain<TState> grain = GetGrain(id);
-
-            var v = await grain.Exists();
-
-            if (v && _querySync != null) await _querySync.UpdateQueryStore(id, await grain.Get());
-
-            return NoContent();
         }
     }
 

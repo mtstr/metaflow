@@ -17,7 +17,6 @@ namespace Metaflow.Orleans
         ICustomStorageInterface<GrainState<T>, object>
     {
         private readonly IDispatcher<T> _dispatcher;
-        private readonly IQuerySync<T> _querySync;
         private readonly IClusterClient _clusterClient;
         private readonly UpgradeMap _upgradeMap;
         private readonly EventStoreClient _eventStore;
@@ -28,7 +27,7 @@ namespace Metaflow.Orleans
 
         public RestfulGrain(IDispatcher<T> dispatcher, EventStoreClient eventStore, ILogger<RestfulGrain<T>> logger,
             ITelemetryClient telemetry, IEventSerializer eventSerializer, IClusterClient clusterClient,
-            UpgradeMap upgradeMap, IQuerySync<T> querySync = null)
+            UpgradeMap upgradeMap)
         {
             _dispatcher = dispatcher;
             _eventStore = eventStore;
@@ -37,7 +36,6 @@ namespace Metaflow.Orleans
             _eventSerializer = eventSerializer;
             _clusterClient = clusterClient;
             _upgradeMap = upgradeMap;
-            _querySync = querySync;
         }
 
         public Task<object> GetState() => Task.FromResult((object)State.Value);
@@ -172,8 +170,6 @@ namespace Metaflow.Orleans
 
             await Persist<TResource, TInput>(handleEvent);
 
-            await UpdateQueryStore();
-
             _telemetry.TrackEvents<TResource, TInput>(GrainId(), handleEvent);
 
             return handleEvent;
@@ -205,14 +201,6 @@ namespace Metaflow.Orleans
                 _logger.LogWarning($"Upgrade base not found {type.Name} v{type.ModelVersion()}");
             }
 
-        }
-
-        private Task UpdateQueryStore()
-        {
-            if (_querySync != null)
-                return _querySync.UpdateQueryStore(GrainId(), State.Value);
-
-            return Task.CompletedTask;
         }
 
         private bool IsPostDefined()
