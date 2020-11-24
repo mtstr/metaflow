@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -10,9 +9,9 @@ namespace Metaflow.Orleans
 
     [DefaultActionConvention]
     public class DeleteController<TGrain, TResource> : GrainController<TGrain, TResource>
-    
+
     {
-        public DeleteController(IClusterClient clusterClient):base(clusterClient)
+        public DeleteController(IClusterClient clusterClient) : base(clusterClient)
         {
         }
 

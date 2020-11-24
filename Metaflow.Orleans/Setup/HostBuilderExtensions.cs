@@ -52,7 +52,7 @@ namespace Metaflow.Orleans
                         services.AddApplicationInsightsTelemetry();
 
                         services.AddHealthChecks();
-
+                        services.AddScoped<GrainActionFilterAttribute>();
                         services.AddScoped<ITelemetryClient, AppInsightsTelemetryClient>();
 
                         services.AddControllers()

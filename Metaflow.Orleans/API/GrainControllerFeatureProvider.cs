@@ -22,7 +22,7 @@ namespace Metaflow.Orleans
         {
             List<Type> entityTypes = _grainTypes.GroupBy(gt => gt.Name)
                 .Select(g => g.OrderByDescending(gi => gi.ModelVersion()).First()).ToList();
-            
+
             foreach (var entityType in entityTypes)
             {
                 foreach (KeyValuePair<Type, Func<Type, List<Type>>> kv in typeResolvers)
@@ -48,7 +48,7 @@ namespace Metaflow.Orleans
         private static readonly Dictionary<Type, Func<Type, List<Type>>> typeResolvers =
             new Dictionary<Type, Func<Type, List<Type>>>
             {
-                [typeof(GetController<>)] = t => new List<Type>() {t},
+                [typeof(GetController<>)] = t => new List<Type>() { t },
                 [typeof(DeleteController<,>)] = t => FindTypes(t, MutationRequest.DELETE),
                 [typeof(PutController<,>)] = t => FindTypes(t, MutationRequest.PUT),
                 [typeof(DeleteByIdController<,>)] = t =>
@@ -67,7 +67,7 @@ namespace Metaflow.Orleans
                 [typeof(DeleteSelfController<>)] = t =>
                 {
                     var selfDeleteAvailable = t.SelfMethod(MutationRequest.DELETE);
-                    if (selfDeleteAvailable != null) return new List<Type>() {t};
+                    if (selfDeleteAvailable != null) return new List<Type>() { t };
                     return new List<Type>();
                 }
             };
@@ -91,7 +91,7 @@ namespace Metaflow.Orleans
 
         private static Type BuildClosedGenericControllerType(Type openControllerType, Type grainType, Type resourceType)
         {
-            var genericTypeParams = new List<Type> {grainType};
+            var genericTypeParams = new List<Type> { grainType };
 
             if (resourceType != grainType || openControllerType.GetGenericTypeDefinition() == typeof(PostController<,>))
                 genericTypeParams.Add(resourceType);

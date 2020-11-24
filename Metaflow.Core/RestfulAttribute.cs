@@ -16,7 +16,7 @@ namespace Metaflow
 
         public Type ResourceType { get; }
     }
-    
+
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public class RestfulAttribute : Attribute
     {
@@ -27,7 +27,7 @@ namespace Metaflow
 
         public int Version { get; }
 
-        public RestfulAttribute(Type deltaType, int version = 1): this(version)
+        public RestfulAttribute(Type deltaType, int version = 1) : this(version)
         {
             DeltaType = deltaType;
         }

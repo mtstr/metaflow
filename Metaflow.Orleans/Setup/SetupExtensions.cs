@@ -10,7 +10,7 @@ namespace Metaflow.Orleans
 {
     public static class SetupExtensions
     {
-        public static JsonFSharpConverter FSharpJsonConverter = new JsonFSharpConverter( unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.ExternalTag | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags | JsonUnionEncoding.UnwrapOption);
+        public static JsonFSharpConverter FSharpJsonConverter = new JsonFSharpConverter(unionTagCaseInsensitive: true, unionEncoding: JsonUnionEncoding.ExternalTag | JsonUnionEncoding.NamedFields | JsonUnionEncoding.UnwrapFieldlessTags | JsonUnionEncoding.UnwrapOption);
 
 
         public static JsonSerializerOptions Configure(this JsonSerializerOptions options)

@@ -9,6 +9,7 @@ namespace Metaflow.Orleans
     [Route("[controller]")]
     [NamingConvention]
     [ApiController]
+    [ServiceFilter(typeof(GrainActionFilterAttribute))]
     public abstract class GrainController<TState, TResource> : ControllerBase
     {
         private readonly IClusterClient _clusterClient;

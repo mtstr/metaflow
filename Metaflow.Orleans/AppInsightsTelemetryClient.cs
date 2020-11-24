@@ -37,7 +37,7 @@ namespace Metaflow.Orleans
                     telemetry["success"] = "true";
                 }
 
-                _telemetry.TrackEvent(@event.Name<TResource,TInput>(), telemetry);
+                _telemetry.TrackEvent(@event.Name<TResource, TInput>(), telemetry);
             }
         }
 

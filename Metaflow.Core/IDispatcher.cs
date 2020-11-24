@@ -5,7 +5,7 @@ namespace Metaflow
 {
     public interface IDispatcher<T>
     {
-        Task<IEnumerable<object>> Invoke<TResource,TInput>(T owner, MutationRequest request, TInput input);
-      
+        Task<IEnumerable<object>> Invoke<TResource, TInput>(T owner, MutationRequest request, TInput input);
+
     }
 }

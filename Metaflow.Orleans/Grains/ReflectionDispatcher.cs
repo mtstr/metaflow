@@ -10,7 +10,7 @@ namespace Metaflow
     public class ReflectionDispatcher<T> : IDispatcher<T>
 
     {
-        
+
 
 
         public virtual Task<IEnumerable<object>> Invoke<TResource, TInput>(T resourceOwner, MutationRequest request, TInput input)

@@ -61,13 +61,13 @@ namespace Metaflow
 
             return methods.FirstOrDefault(mi => match(mi, resourceType, inputType));
         }
-        
+
         public static RestfulAttribute RestfulAttribute(this Type type)
         {
             return type.GetCustomAttributes().OfType<RestfulAttribute>()
                 .FirstOrDefault();
         }
-        
+
         public static int ModelVersion(this Type type)
         {
             return type.RestfulAttribute().Version;
