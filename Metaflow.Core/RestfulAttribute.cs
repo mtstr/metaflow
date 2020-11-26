@@ -2,7 +2,7 @@ using System;
 
 namespace Metaflow
 {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
     public class RestfulResourceAttribute : Attribute
     {
         public RestfulResourceAttribute()

@@ -302,12 +302,16 @@ namespace Metaflow.Orleans
                 {
                     var json = Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span);
 
-                    var eventObj = _eventSerializer.Deserialize(typeof(T), resolvedEvent.Event.EventType, json);
-
-                    if (eventObj != null)
+                    try
                     {
+                        var eventObj = _eventSerializer.Deserialize(typeof(T), resolvedEvent.Event.EventType, json);
+
                         state = state.Apply(eventObj);
                         version++;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogCritical(5004, ex, ex.Message);
                     }
                 }
             }
@@ -337,13 +341,12 @@ namespace Metaflow.Orleans
 
                 await _eventStore.AppendToStreamAsync(_stream,
                     expectedversion == 0 ? StreamRevision.None : Convert.ToUInt64(expectedversion - 1), events);
-
-                return true;
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                _logger.LogCritical(5003, ex, ex.Message);
             }
+            return true;
         }
     }
 }

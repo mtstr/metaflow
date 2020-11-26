@@ -121,10 +121,10 @@ namespace Metaflow
         public TInput Input { get; }
 
         [JsonConstructor]
-        public Received(MutationRequest request, string resource, TInput input)
+        public Received(MutationRequest request, string resourceType, TInput input)
         {
             Request = request.ToString();
-            ResourceType = resource;
+            ResourceType = resourceType;
             Input = input;
         }
     }
