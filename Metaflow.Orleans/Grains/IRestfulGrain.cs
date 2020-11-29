@@ -3,7 +3,7 @@ using Orleans;
 
 namespace Metaflow.Orleans
 {
-    public interface IRestfulGrain
+    public interface IStateGrain
     {
         Task<object> GetState();
         Task<int> GetVersion();
@@ -11,9 +11,7 @@ namespace Metaflow.Orleans
         Task<bool> Exists();
     }
 
-    public interface IRestfulGrain<T> : IRestful<T>, IRestfulGrain, IGrainWithStringKey
+    public interface IStateGrain<T> : IStateGrain, IGrainWithStringKey
     {
-        Task<Result> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request);
-
     }
 }

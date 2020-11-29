@@ -38,7 +38,7 @@ namespace Metaflow.Orleans
                     })
                     .ConfigureApplicationParts(parts =>
                     {
-                        parts.AddApplicationPart(typeof(IRestfulGrain<>).Assembly).WithCodeGeneration();
+                        parts.AddApplicationPart(typeof(IStateGrain<>).Assembly).WithCodeGeneration();
 
                         foreach (var assembly in metaflowAssemblies)
                         {

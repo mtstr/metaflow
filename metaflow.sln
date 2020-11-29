@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Core", "Metaflow.Core\Metaflow.Core.csproj", "{09D02488-C6A4-4772-B573-149FAE03EC1D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Core", "Metaflow.Core\Metaflow.Core.fsproj", "{09D02488-C6A4-4772-B573-149FAE03EC1D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Orleans", "Metaflow.Orleans\Metaflow.Orleans.csproj", "{1E75CB2C-35D2-4866-853B-965D3DED4FF4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Orleans.DefaultHost", "Metaflow.Orleans.DefaultHost\Metaflow.Orleans.DefaultHost.csproj", "{96D90827-CC03-453B-8B17-2AE737EEAD06}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Metaflow", "Metaflow\Metaflow.fsproj", "{FF1D7E4D-6025-4123-9C6D-087F2B762B51}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,5 +60,17 @@ Global
 		{96D90827-CC03-453B-8B17-2AE737EEAD06}.Release|x64.Build.0 = Release|Any CPU
 		{96D90827-CC03-453B-8B17-2AE737EEAD06}.Release|x86.ActiveCfg = Release|Any CPU
 		{96D90827-CC03-453B-8B17-2AE737EEAD06}.Release|x86.Build.0 = Release|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Debug|x64.Build.0 = Debug|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Debug|x86.Build.0 = Debug|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|x64.ActiveCfg = Release|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|x64.Build.0 = Release|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|x86.ActiveCfg = Release|Any CPU
+		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

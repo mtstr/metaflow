@@ -9,12 +9,14 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.EventSourcing;
 using Orleans.EventSourcing.CustomStorage;
+using static Metaflow.Json;
+using static Metaflow.EventSourcing;
 
 namespace Metaflow.Orleans
 {
 
-    public class RestfulGrain<T> : JournaledGrain<GrainState<T>>, IRestfulGrain<T>,
-        ICustomStorageInterface<GrainState<T>, object>
+    public class RestfulGrain<T> : JournaledGrain<State<T>>, IStateGrain<T>,
+        ICustomStorageInterface<State<T>, object>
     {
         private readonly IDispatcher<T> _dispatcher;
         private readonly IClusterClient _clusterClient;
@@ -69,49 +71,8 @@ namespace Metaflow.Orleans
             await base.OnActivateAsync();
         }
 
-        public Task<Result> Put<TResource>(TResource resource)
-        {
-            return Handle<TResource, TResource>(MutationRequest.PUT, resource);
-        }
 
-        public Task<Result> Delete()
-        {
-            return Handle<T, T>(MutationRequest.DELETE, default);
-        }
-
-        public Task<Result> Delete<TResource>(TResource resource)
-        {
-            return Handle<TResource, TResource>(MutationRequest.DELETE, resource);
-        }
-
-        public Task<Result> Patch<TDelta>(TDelta delta)
-        {
-            return Handle<T, TDelta>(MutationRequest.PATCH, delta);
-        }
-
-        public Task<Result> Post<TResource>(TResource resource)
-        {
-            return Handle<TResource, TResource>(MutationRequest.POST, resource);
-        }
-
-
-        public Task<Result> Execute<TResource, TInput>(CustomRequest<TResource, TInput> request)
-        {
-            return Handle<TResource, TInput>(request.Request, request.Input);
-        }
-
-        protected override void TransitionState(GrainState<T> state, object @event)
-        {
-            if (@event is EventDto dto)
-            {
-                GrainState<T> newState = state.Apply(dto.Event);
-
-                State.Exists = newState.Exists;
-                State.Value = newState.Value;
-            }
-        }
-
-        private async Task<Result> Handle<TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<LegacyResult> Handle<TResource, TInput>(Operation request, TInput input)
         {
             _telemetry.TrackRequest<TResource, TInput>(request, GrainId());
 
@@ -124,7 +85,7 @@ namespace Metaflow.Orleans
             {
                 var events = await HandleEvent<TResource, TInput>(request, input);
                 var success = !events.Any(e => e is Rejected<TInput>);
-                return success ? Result.Ok(events) : Result.Nok(events);
+                return success ? LegacyResult.Ok(events) : LegacyResult.Nok(events);
             }
             catch (Exception ex)
             {
@@ -134,12 +95,12 @@ namespace Metaflow.Orleans
             }
         }
 
-        private bool CreateRequest(MutationRequest request, object input)
+        private bool CreateRequest(Operation request, object input)
         {
-            return request == MutationRequest.POST && input is T;
+            return request == Operation.POST && input is T;
         }
 
-        private async Task<IEnumerable<object>> HandleEvent<TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<IEnumerable<object>> HandleEvent<TResource, TInput>(Operation request, TInput input)
         {
             var reception = new Received<TInput>(request, typeof(TResource).Name, input);
 
@@ -152,7 +113,7 @@ namespace Metaflow.Orleans
                     if (ImplicitCreateAllowed())
                     {
                         IEnumerable<object> created = IsPostDefined()
-                            ? (await Dispatch<T, T>(MutationRequest.POST, default))
+                            ? (await Dispatch<T, T>(Operation.POST, default))
                             : DefaultCreationEvent();
 
                         await Persist<TResource, TInput>(created);
@@ -185,8 +146,8 @@ namespace Metaflow.Orleans
             if (baseType != null)
             {
                 if (_clusterClient.GetGrain(
-                    typeof(IRestfulGrain<>).MakeGenericType(baseType),
-                    GrainId()) is IRestfulGrain baseGrain && await baseGrain.Exists())
+                    typeof(IStateGrain<>).MakeGenericType(baseType),
+                    GrainId()) is IStateGrain baseGrain && await baseGrain.Exists())
                 {
                     var upgradedState = (T)type.GetMethod("Upgrade")
                         .Invoke(null, new[] { await baseGrain.GetState() });
@@ -205,7 +166,7 @@ namespace Metaflow.Orleans
 
         private bool IsPostDefined()
         {
-            return typeof(T).SelfMethod(MutationRequest.POST) != null;
+            return typeof(T).SelfMethod(Operation.POST) != null;
         }
 
         private IEnumerable<object> DefaultCreationEvent()
@@ -231,12 +192,12 @@ namespace Metaflow.Orleans
             return new List<object>() { new Created<T>(State.Value) };
         }
 
-        private async Task<IEnumerable<object>> Dispatch<TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<IEnumerable<object>> Dispatch<TResource, TInput>(Operation request, TInput input)
         {
             return await _dispatcher.Invoke<TResource, TInput>(State.Value, request, input);
         }
 
-        private async Task HandleException<TResource, TInput>(MutationRequest request, TInput input, Exception ex)
+        private async Task HandleException<TResource, TInput>(Operation request, TInput input, Exception ex)
         {
             var failure = new Failed<TInput>(request, typeof(TResource).Name, input, ex.Message);
 
@@ -248,10 +209,10 @@ namespace Metaflow.Orleans
                 {new EventDto() {Name = $"Failed:{typeof(TInput).Name}", Event = failure}});
         }
 
-        private Result NotFound<TResource, TInput>()
+        private LegacyResult NotFound<TResource, TInput>()
         {
             var result =
-                Result.Nok($"Object {GrainId()} does not exist and does not support implicit creation");
+                LegacyResult.Nok($"Object {GrainId()} does not exist and does not support implicit creation");
 
             return result;
         }
@@ -284,7 +245,7 @@ namespace Metaflow.Orleans
             return GrainReference.GrainIdentity.PrimaryKeyString;
         }
 
-        public async Task<KeyValuePair<int, GrainState<T>>> ReadStateFromStorage()
+        public async Task<KeyValuePair<int, State<T>>> ReadStateFromStorage()
         {
             _stream = $"{typeof(T).Name}:{ModelVersion()}:{this.GrainId()}";
 
@@ -293,7 +254,7 @@ namespace Metaflow.Orleans
                 _stream,
                 StreamPosition.Start);
 
-            var state = new GrainState<T>();
+            var state = new State<T>();
             var version = 0;
 
             if (await stream.ReadState != ReadState.StreamNotFound)
@@ -316,7 +277,7 @@ namespace Metaflow.Orleans
                 }
             }
 
-            return new KeyValuePair<int, GrainState<T>>(version, state);
+            return new KeyValuePair<int, State<T>>(version, state);
         }
 
         private int ModelVersion()

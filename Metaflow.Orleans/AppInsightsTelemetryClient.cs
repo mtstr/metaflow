@@ -41,7 +41,7 @@ namespace Metaflow.Orleans
             }
         }
 
-        public void TrackException<TResource, TInput>(MutationRequest request, string id, Exception ex)
+        public void TrackException<TResource, TInput>(Operation request, string id, Exception ex)
         {
             _telemetry.TrackException(ex, new Dictionary<string, string>
             {
@@ -52,7 +52,7 @@ namespace Metaflow.Orleans
             });
         }
 
-        public void TrackRequest<TResource, TInput>(MutationRequest request, string id)
+        public void TrackRequest<TResource, TInput>(Operation request, string id)
         {
             _telemetry.TrackEvent(request.ToString(), new Dictionary<string, string>
             {

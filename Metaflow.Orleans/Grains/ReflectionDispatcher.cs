@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using Orleans;
-using static Metaflow.MutationRequest;
+using static Metaflow.Operation;
 namespace Metaflow
 {
     public class ReflectionDispatcher<T> : IDispatcher<T>
@@ -13,7 +13,7 @@ namespace Metaflow
 
 
 
-        public virtual Task<IEnumerable<object>> Invoke<TResource, TInput>(T resourceOwner, MutationRequest request, TInput input)
+        public virtual Task<IEnumerable<object>> Invoke<TResource, TInput>(T resourceOwner, Operation request, TInput input)
         {
             static bool implicitCreation() => typeof(TResource) == typeof(T) && typeof(TInput) == typeof(T);
 
@@ -27,7 +27,7 @@ namespace Metaflow
         }
 
 
-        private Task<IEnumerable<object>> DispatchSelf<TResource>(T owner, MutationRequest request)
+        private Task<IEnumerable<object>> DispatchSelf<TResource>(T owner, Operation request)
         {
             var mi = typeof(T).SelfMethod(request);
 
@@ -42,12 +42,12 @@ namespace Metaflow
             return Task.FromResult(lambda(owner));
         }
 
-        private static void ThrowForMissingMethod(MutationRequest request)
+        private static void ThrowForMissingMethod(Operation request)
         {
             throw new InvalidOperationException($"No valid method for {request} found in {typeof(T).Name}");
         }
 
-        private static Task<IEnumerable<object>> Dispatch<TResource, TInput>(T owner, MutationRequest request, TInput input)
+        private static Task<IEnumerable<object>> Dispatch<TResource, TInput>(T owner, Operation request, TInput input)
         {
             var mi = typeof(T).MatchingMethods(request, false).For(typeof(TResource), typeof(TInput));
 
