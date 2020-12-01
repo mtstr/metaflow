@@ -14,23 +14,21 @@ using static Metaflow.EventSourcing;
 
 namespace Metaflow.Orleans
 {
-
     public class StateGrain<T> : JournaledGrain<State<T>>, IStateGrain<T>,
         ICustomStorageInterface<State<T>, object>
     {
         private readonly IClusterClient _clusterClient;
-        private readonly UpgradeMap _upgradeMap;
         private readonly EventStoreClient _eventStore;
         private readonly ILogger<StateGrain<T>> _logger;
         private string _stream;
         private readonly IEventSerializer _eventSerializer;
-        private readonly EventStreamId<T> _eventStreamId;
+        private readonly IEventStreamId<T> _eventStreamId;
 
         public StateGrain(
             EventStoreClient eventStore,
             ILogger<StateGrain<T>> logger,
             IEventSerializer eventSerializer,
-            EventStreamId<T> eventStreamId)
+            IEventStreamId<T> eventStreamId)
         {
             _eventStore = eventStore;
             _logger = logger;
@@ -80,7 +78,7 @@ namespace Metaflow.Orleans
 
         public async Task<KeyValuePair<int, State<T>>> ReadStateFromStorage()
         {
-            _stream = _eventStreamId.Get();
+            _stream = _eventStreamId.Get(GrainId());
 
             var stream = _eventStore.ReadStreamAsync(
                 Direction.Forwards,

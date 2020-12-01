@@ -4,6 +4,8 @@ open System.Text.Json.Serialization
 open System.Text.Json
 open System.Collections.Generic
 open System.Reflection
+open Microsoft.AspNetCore.Http
+open FSharp.Control.Tasks
 
 type State<'T>(value: 'T option) =
     new() = State(None)
@@ -47,6 +49,8 @@ module Json =
         options.PropertyNamingPolicy <- JsonNamingPolicy.CamelCase
         options
 
+
+
 module EventSourcing =
     type EventDef = { Feature: string }
 
@@ -64,7 +68,8 @@ module EventSourcing =
             features |> Map.tryFind (eventDef.Feature)
 
         match maybeFeature with
-        | Some f when f.Scope.IsSome && f.Scope.Value.Name = resource -> f.Scope
+        | Some f when f.RequiredState.IsSome
+                      && f.RequiredState.Value.Name = resource -> f.RequiredState
         | Some f -> Some f.Model
         | _ -> None
 
@@ -82,7 +87,7 @@ module EventSourcing =
         | Some t -> Some(System.Text.Json.JsonSerializer.Deserialize(eventJson, t, Json.options))
         | None -> None
 
-    type EventStreamId<'T> = { Get: unit -> string }
+    type IEventStreamId<'T> = { Get: string -> string }
 
     type IEventSerializer =
         abstract Deserialize: string -> string -> obj option
