@@ -1,7 +1,6 @@
 namespace Metaflow
 
 open System
-open System.Collections.Generic
 
 module Monitoring =
     type ITelemetryClient =

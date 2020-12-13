@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Metaflow.Orleans
+namespace Metaflow
 {
     public class MetaflowConfig
     {

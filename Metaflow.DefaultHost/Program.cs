@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-namespace Metaflow.Orleans.DefaultHost
+namespace Metaflow.DefaultHost
 {
     public class Program
     {
@@ -24,15 +24,18 @@ namespace Metaflow.Orleans.DefaultHost
         {
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
 
-            return Host.CreateDefaultBuilder(args)
+            var b = Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
                 })
                 .ConfigureAppConfiguration((_, config) => config
                 .AddEnvironmentVariables()
-                .AddUserSecrets<Startup>())
-                .AddMetaflow();
+                .AddUserSecrets<Startup>());
+                
+            b.AddMetaflow();
+
+            return b;
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Reflection;
 using System.Runtime.Loader;
 using EventStore.Client;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,7 +14,7 @@ using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
 
-namespace Metaflow.Orleans
+namespace Metaflow
 {
     public static class HostBuilderExtensions
     {
@@ -39,6 +38,8 @@ namespace Metaflow.Orleans
                     .ConfigureApplicationParts(parts =>
                     {
                         parts.AddApplicationPart(typeof(IStateGrain<>).Assembly).WithCodeGeneration();
+                        parts.AddApplicationPart(typeof(IFeatureGrain<,>).Assembly).WithCodeGeneration();
+                        parts.AddApplicationPart(typeof(IAggregateGrain).Assembly).WithCodeGeneration();
 
                         foreach (var assembly in metaflowAssemblies)
                         {
@@ -47,30 +48,21 @@ namespace Metaflow.Orleans
                     })
                     .ConfigureServices(services =>
                     {
-                        services.AddScoped(typeof(IDispatcher<>), typeof(ReflectionDispatcher<>));
-
                         services.AddApplicationInsightsTelemetry();
 
                         services.AddHealthChecks();
-                        services.AddScoped<GrainActionFilterAttribute>();
-                        services.AddScoped<ITelemetryClient, AppInsightsTelemetryClient>();
 
-                        services.AddControllers()
-                            .AddMetaflow(metaflowAssemblies);
+//                        services.AddScoped<Monitoring.ITelemetryClient, AppInsightsTelemetryClient>();
+
+                        services.AddControllers();
 
                         services.AddHttpClient();
 
-                        services.AddSingleton<IEventSerializer, EventSerializer>();
-                        services.AddSingleton(_ =>
-                        {
-                            List<Type> types = metaflowAssemblies.SelectMany(a => a.GetExportedTypes()).ToList();
-                            List<Type> resourceTypes = types.Where(t => t.GetCustomAttributes().Any(a => a is RestfulAttribute)).ToList();
-                            return UpgradeMap.Initialize(resourceTypes);
-                        });
                         services.AddEventStoreClient(settings =>
                         {
                             settings.ConnectivitySettings.Address = new Uri(config.EventStore.Endpoint);
-                            settings.DefaultCredentials = new UserCredentials(config.EventStore.User, config.EventStore.Password);
+                            settings.DefaultCredentials =
+                                new UserCredentials(config.EventStore.User, config.EventStore.Password);
                             settings.CreateHttpMessageHandler = () =>
                                 new SocketsHttpHandler
                                 {

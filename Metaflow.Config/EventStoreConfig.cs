@@ -1,4 +1,4 @@
-namespace Metaflow.Orleans
+namespace Metaflow
 {
     public class EventStoreConfig
     {

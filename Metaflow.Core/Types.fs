@@ -156,6 +156,7 @@ type FeatureCallArgs =
 
 type FeatureCall =
     { Feature: Feature
+      AwaitState: bool
       Args: FeatureCallArgs }
 
 type FeatureHandler<'model, 'state, 'di> =
@@ -163,10 +164,17 @@ type FeatureHandler<'model, 'state, 'di> =
     | AggregateRootWithStateAndDI of (AggregateRootId -> 'state -> 'di -> FeatureOutput<'model>)
     | AggregateRootWithDI of (AggregateRootId -> 'di -> FeatureOutput<'model>)
 
+type StateHandler<'model, 'state> = Event<'model> -> Async<'state>
+
+type StateObserver<'model> =
+    { StateType: Type
+      StateIdResolver: 'model -> string }
+
+
 type IFeatureService<'service> =
     abstract Get: unit -> 'service option
 
-type FeatureService<'service>(service: 'service option) =
+type HandlerDep<'service>(service: 'service option) =
     interface IFeatureService<'service> with
         member this.Get() =
             match typeof<'service> with

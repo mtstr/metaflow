@@ -1,13 +1,9 @@
 ﻿namespace Metaflow
 
-open System.Text.Json.Serialization
-open System.Text.Json
 open System.Collections.Generic
-open System.Reflection
 open Microsoft.AspNetCore.Http
 open FSharp.Control.Tasks
 open Orleans
-open Grains
 
 module Http =
     let routeFeature (ctx: Microsoft.AspNetCore.Http.HttpContext) =
@@ -32,7 +28,7 @@ module Http =
                     match maybeFeature with
                     | None -> unitTask { context.Response.StatusCode <- 404 }
                     | Some f ->
-                        context.Items.Add("feature", { Feature = f; Args = featureArgs })
+                        context.Items.Add("feature", { Feature = f; Args = featureArgs; AwaitState = false })
                         next.Invoke(context)
 
                 return! t
