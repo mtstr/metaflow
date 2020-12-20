@@ -35,6 +35,7 @@ namespace Metaflow
                         opts.ClusterId = $"{config.ClusterName}Cluster";
                         opts.ServiceId = $"{config.ClusterName}Service";
                     })
+                    .AddRedisGrainStorage("domainState")
                     .ConfigureApplicationParts(parts =>
                     {
                         parts.AddApplicationPart(typeof(IStateGrain<>).Assembly).WithCodeGeneration();
@@ -83,7 +84,7 @@ namespace Metaflow
                 else
                 {
                     siloBuilder
-                        .UseAzureStorageClustering(opt => opt.ConnectionString = config.AzureStorage)
+                        .UseRedisClustering(opt => opt.ConnectionString = config.OrleansStorage)
                         .ConfigureEndpoints(siloPort: config.SiloPort, gatewayPort: config.GatewayPort);
                 }
             });

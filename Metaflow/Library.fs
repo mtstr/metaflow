@@ -1,10 +1,14 @@
 ﻿namespace Metaflow
 
+open FSharp.Control.Tasks
 open System.Text.Json.Serialization
 open System.Text.Json
 open System.Collections.Generic
 open System.Reflection
 open Microsoft.AspNetCore.Http
+open Orleans
+
+
 
 type State<'T>(value: 'T option) =
     new() = State(None)
@@ -15,6 +19,7 @@ type State<'T>(value: 'T option) =
 
         let f t (m: MethodInfo) =
             let p = m.GetParameters() |> List.ofSeq
+
             m.IsPublic
             && m.Name = "Apply"
             && m.ReturnType = typeof<'T>
@@ -54,14 +59,14 @@ module EventSourcing =
     type EventDef = { Feature: string }
 
     let private tryResolveType (eventName: string) (eventJson: string) (features: Map<string, Feature>) =
-        let (resource, version) =
+        let (resource, _) =
             match List.ofArray (eventName.Split(":")) with
             | [ _; r; v ] -> (r, v |> int)
             | [ _; r; v; _ ] -> (r, v |> int)
             | _ -> failwith "Unexpected event name. Are you sure?"
 
         let eventDef =
-            System.Text.Json.JsonSerializer.Deserialize<EventDef>(eventJson, Json.options)
+            JsonSerializer.Deserialize<EventDef>(eventJson, Json.options)
 
         let maybeFeature =
             features |> Map.tryFind (eventDef.Feature)
@@ -83,7 +88,7 @@ module EventSourcing =
             | None -> None
 
         match eventType with
-        | Some t -> Some(System.Text.Json.JsonSerializer.Deserialize(eventJson, t, Json.options))
+        | Some t -> Some(JsonSerializer.Deserialize(eventJson, t, Json.options))
         | None -> None
 
     type IEventStreamId<'T> = { Get: string -> string }

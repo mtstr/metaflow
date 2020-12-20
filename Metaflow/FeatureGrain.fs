@@ -1,5 +1,6 @@
 namespace Metaflow
 
+open EventStore.ClientAPI
 open Metaflow
 open Orleans
 open System.Threading.Tasks
@@ -8,11 +9,11 @@ open Microsoft.Extensions.Logging
 open EventStore.Client
 open System.Text
 open System
-
+open FSharp.UMX
 
 type IFeatureGrain =
     inherit IGrainWithStringKey
-    abstract Call: EventStream * FeatureCall -> Task<FeatureResult>
+    abstract Call: FeatureCall -> Task<FeatureResult>
 
 type IFeatureGrain<'state, 'di> =
     inherit IFeatureGrain
@@ -26,7 +27,7 @@ type FeatureGrain<'model, 'state, 'di>(eventStore: EventStoreClient,
                                        service: IFeatureService<'di>) =
     inherit Grain()
 
-    member private this.SaveEvent(stream: string, event: Event<'model>, expectedversion: int) =
+    member private this.SaveEvent(stream: string<eventStream>, event: Event<'model>) =
 
         task {
             try
@@ -39,13 +40,10 @@ type FeatureGrain<'model, 'state, 'di>(eventStore: EventStoreClient,
                     EventData(Uuid.NewUuid(), event.Name(), jsonBytes)
 
                 let streamRevision =
-                    if expectedversion = 0 then
-                        StreamRevision.None
-                    else
-                        Convert.ToUInt64(expectedversion - 1)
-                        |> StreamRevision
+                    Convert.ToUInt64(ExpectedVersion.Any)
+                    |> StreamRevision
 
-                let! r = eventStore.AppendToStreamAsync(stream, streamRevision, [ eventData ])
+                let! r = eventStore.AppendToStreamAsync(stream.ToString(), streamRevision, [ eventData ])
 
 
                 r |> ignore
@@ -56,18 +54,18 @@ type FeatureGrain<'model, 'state, 'di>(eventStore: EventStoreClient,
         }
 
     interface IFeatureGrain<'state, 'di> with
-        member this.Call(stream: EventStream, call: FeatureCall) =
+        member this.Call(call: FeatureCall) =
             task {
                 let! featureOutput =
                     match (handler, call.Args.Value, service.Get()) with
-                    | (AggregateRootWithDI h, AggregateRoot id, Some s) -> task { return h id s }
+                    | (AggregateRootWithDI h, AggregateRootId id, Some s) -> task { return h id s }
                     | _ -> task { return Ignore "" }
 
                 let event =
                     Metaflow.Event<'model>
                         .FromOutput(featureOutput, (call.Feature))
 
-                let! saveResult = this.SaveEvent(stream.Name, event, stream.Version)
+                let! saveResult = this.SaveEvent(%call.AggregateRootId, event)
 
 
                 let (result, modelChangeOption) =
@@ -101,3 +99,22 @@ type FeatureGrain<'model, 'state, 'di>(eventStore: EventStoreClient,
 
                 return result
             }
+module Features =
+    let execute call (clusterClient: IClusterClient) =
+        task {
+            let (stateType, serviceType) =
+                match (call.Feature.RequiredState, call.Feature.RequiredService) with
+                | (Some s, Some d) -> (s, d)
+                | (Some s, None) -> (s, typeof<UnitType>)
+                | (None, Some d) -> (typeof<UnitType>, d)
+                | (None, None) -> (typeof<UnitType>, typeof<UnitType>)
+
+            let featureGrainType =
+                typedefof<IFeatureGrain<_, _>>
+                    .MakeGenericType(stateType, serviceType)
+
+            let featureGrain =
+                clusterClient.GetGrain(featureGrainType, call.Id) :?> IFeatureGrain
+
+            return! featureGrain.Call(call)
+        }

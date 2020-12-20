@@ -7,10 +7,10 @@ open Orleans
 
 module Http =
     let routeFeature (ctx: Microsoft.AspNetCore.Http.HttpContext) =
-        { Definition = FeatureArgsDefinition.AggregateRoot "store"
-          Value = AggregateRoot { Id = "store_1" } }
+        { Definition = ModelKind.AggregateRoot "store"
+          Value = AggregateRootId { Id = "store_1" } }
 
-    type FeatureRoutingMiddleware(next: RequestDelegate, featureRouting: IDictionary<FeatureArgsDefinition, Feature>) =
+    type FeatureRoutingMiddleware(next: RequestDelegate, featureRouting: IDictionary<ModelKind, Feature>) =
         let featureRoutingMap =
             featureRouting
             |> Seq.map (fun kv -> (kv.Key, kv.Value))
@@ -57,12 +57,12 @@ module Http =
                     | None -> unitTask { context.Response.StatusCode <- 404 }
                     | Some f ->
                         match f.Args.Value with
-                        | AggregateRoot id ->
+                        | AggregateRootId id ->
                             unitTask {
                                 let grain =
                                     clusterClient.GetGrain<IAggregateGrain>($"agg_{id}")
 
-                                let! result = grain.Call f
+                                let! result = grain.Execute f
 
                                 return!
                                     match result with

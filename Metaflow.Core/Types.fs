@@ -4,7 +4,7 @@ open Microsoft.FSharp.Reflection
 open System
 open System.Threading.Tasks
 
-type EventStream = { Name: string; Version: int }
+[<Measure>] type eventStream
 
 type Operation =
     | POST
@@ -15,10 +15,16 @@ type Operation =
         match FSharpValue.GetUnionFields(this, typeof<Operation>) with
         | case, _ -> case.Name
 
+type ModelKind =
+    | AggregateRoot of aggregate: string
+    | OwnedValue of aggregate: string
+    | OwnedEntity of aggregate: string
+
 type Feature =
     { Operation: Operation
       Scoped: bool
       Model: Type
+      ModelKind: ModelKind
       RequiredState: Type option
       RequiredService: Type option
       Name: string
@@ -39,32 +45,36 @@ type Nonsuccess<'T> =
       Feature: string
       Operation: Operation }
 
+
+
 [<AttributeUsage(AttributeTargets.Method)>]
-type FeatureAttribute(Operation: Operation, argType: Type, version: int) =
+type FeatureAttribute(operation: Operation, role: ModelKind, model: Type, version: int) =
     inherit Attribute()
     let scoped = false
-    new(op: Operation, argType: Type) = FeatureAttribute(op, argType, 1)
+    new(op: Operation, role: ModelKind, model: Type) = FeatureAttribute(op, role, model, 1)
 
     member __.Version: int = version
-    member __.Operation: Operation = Operation
-    member __.ArgType: Type = argType
+    member __.Role = role
+    member __.Operation: Operation = operation
+    member __.Model: Type = model
     member val Scoped = scoped with get, set
 
 
 
 type UnitType = unit
 
-type ModelChange<'model> =
+type Mutation<'model> =
     { Before: 'model option
       After: 'model option }
 
 type FeatureResult =
     | Ok
+    | NotFound
     | RequestError of string
     | ServerError of string
 
 type FeatureOutput<'model> =
-    | Success of ModelChange<'model>
+    | Success of Mutation<'model>
     | Reject of string
     | Failure of string
     | Ignore of string
@@ -131,33 +141,45 @@ type Event<'model> =
 
         $"{(name this)}:{resource}:{suffix}"
 
-type FeatureArgsDefinition =
-    | Unknown
-    | AggregateRoot of string
-    | OwnedValue of string
-    | OwnedEntity of string
+
 
 type AggregateRootId = { Id: string }
 
 type OwnedValueId = { AggregateRootId: string }
 
+type IFeatureResolver =
+    abstract Resolve<'model> : Operation -> Feature option
+
 type OwnedEntityId =
     { AggregateRootId: string
       EntityId: string }
 
-type FeatureArgValue =
-    | AggregateRoot of AggregateRootId
-    | OwnedValue of OwnedValueId
-    | OwnedEntity of OwnedEntityId
+type ModelId =
+    | AggregateRootId of AggregateRootId
+    | OwnedValueId of OwnedValueId
+    | OwnedEntityId of OwnedEntityId
+    override this.ToString() =
+        match this with
+        | AggregateRootId { Id = id } -> id
+        | OwnedEntityId { AggregateRootId = rootId
+                          EntityId = id } -> $"{rootId}:{id}"
+        | OwnedValueId { AggregateRootId = rootId } -> "{rootId}"
 
 type FeatureCallArgs =
-    { Definition: FeatureArgsDefinition
-      Value: FeatureArgValue }
+    { Definition: ModelKind
+      Value: ModelId }
 
 type FeatureCall =
     { Feature: Feature
       AwaitState: bool
       Args: FeatureCallArgs }
+    member this.AggregateRootId =
+        match this.Args.Value with
+        | AggregateRootId { Id = id } -> id
+        | OwnedEntityId { AggregateRootId = rootId } -> rootId
+        | OwnedValueId { AggregateRootId = rootId } -> rootId
+    member this.Id =
+        $"ftr:{this.Feature.Name}:{this.Args.Value}"
 
 type FeatureHandler<'model, 'state, 'di> =
     | AggregateRootWithState of (AggregateRootId -> 'state -> FeatureOutput<'model>)

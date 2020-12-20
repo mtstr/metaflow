@@ -12,12 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Library.fs" />
     <Compile Include="StateGrain.fs" />
+    <Compile Include="Library.fs" />
     <Compile Include="FeatureGrain.fs" />
     <Compile Include="AggregateGrain.fs" />
     <Compile Include="Http.fs" />
     <Compile Include="Monitoring.fs" />
+    <Compile Include="FeatureClient.fs" />
   </ItemGroup>
 
   <ItemGroup>

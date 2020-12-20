@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.DefaultHost", "Met
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Metaflow", "Metaflow\Metaflow.fsproj", "{FF1D7E4D-6025-4123-9C6D-087F2B762B51}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Metaflow.Tests", "Metaflow.Tests\Metaflow.Tests.fsproj", "{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,5 +74,17 @@ Global
 		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|x64.Build.0 = Release|Any CPU
 		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|x86.ActiveCfg = Release|Any CPU
 		{FF1D7E4D-6025-4123-9C6D-087F2B762B51}.Release|x86.Build.0 = Release|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Debug|x64.Build.0 = Debug|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Debug|x86.Build.0 = Debug|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|x64.ActiveCfg = Release|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|x64.Build.0 = Release|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|x86.ActiveCfg = Release|Any CPU
+		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

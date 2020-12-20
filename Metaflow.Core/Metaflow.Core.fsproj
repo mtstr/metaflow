@@ -13,4 +13,7 @@
   <ItemGroup>
     <Compile Include="Types.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FSharp.UMX" Version="1.0.0" />
+  </ItemGroup>
 </Project>

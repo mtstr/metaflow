@@ -11,21 +11,22 @@ open System.Collections.Generic
 
 type IStateGrain<'state> =
     inherit IGrainWithStringKey
-    abstract Call<'model> : ModelChange<'model> -> Task
+    abstract Call<'model> : Mutation<'model> -> Task
 
 
 type StateGrain<'state>([<PersistentState("domainState")>] state: IPersistentState<'state>,
-                        stateHandlers: IDictionary<Type, obj -> Async<unit>>,
+                        stateHandlers: IDictionary<Type, 'state -> obj -> Async<'state>>,
                         logger: ILogger<StateGrain<'state>>) =
     inherit Grain()
 
 
     interface IStateGrain<'state> with
-        member this.Call<'model>(modelChange: ModelChange<'model>) =
+        member this.Call<'model>(modelChange: Mutation<'model>) =
             unitTask {
                 match stateHandlers.ContainsKey(typeof<'model>) with
                 | true ->
-                    do! stateHandlers.Item typeof<'model> (modelChange :> obj)
+                    let! newState = stateHandlers.Item typeof<'model> state.State (modelChange :> obj)
+                    state.State <- newState
                     do! state.WriteStateAsync()
                 | _ -> ()
             }
