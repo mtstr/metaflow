@@ -8,7 +8,8 @@
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
     <UserSecretsId>34b0162a-d137-44d8-87bd-ca27c95ee1bc</UserSecretsId>
     <IsPackable>false</IsPackable>
-    
+    <RootNamespace>Metaflow.Tests.Host</RootNamespace>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Metaflow.Config\Metaflow.Config.csproj" />
+    <ProjectReference Include="..\Metaflow.Tests.Client\Metaflow.Tests.Client.csproj" />
   </ItemGroup>
 
 </Project>

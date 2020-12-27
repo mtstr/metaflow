@@ -1,14 +1,9 @@
 ﻿namespace Metaflow
 
-open FSharp.Control.Tasks
 open System.Text.Json.Serialization
 open System.Text.Json
-open System.Collections.Generic
 open System.Reflection
 open Microsoft.AspNetCore.Http
-open Orleans
-
-
 
 type State<'T>(value: 'T option) =
     new() = State(None)
@@ -58,12 +53,7 @@ module Json =
 module EventSourcing =
     type EventDef = { Feature: string }
 
-    let private tryResolveType (eventName: string) (eventJson: string) (features: Map<string, Feature>) =
-        let (resource, _) =
-            match List.ofArray (eventName.Split(":")) with
-            | [ _; r; v ] -> (r, v |> int)
-            | [ _; r; v; _ ] -> (r, v |> int)
-            | _ -> failwith "Unexpected event name. Are you sure?"
+    let private tryResolveTypes (eventJson: string) (features: Map<string, Feature>) =
 
         let eventDef =
             JsonSerializer.Deserialize<EventDef>(eventJson, Json.options)
@@ -72,19 +62,19 @@ module EventSourcing =
             features |> Map.tryFind (eventDef.Feature)
 
         match maybeFeature with
-        | Some f when f.RequiredState.IsSome
-                      && f.RequiredState.Value.Name = resource -> f.RequiredState
-        | Some f -> Some f.Model
+        | Some f -> Some(f.Operation.AsType(), f.Model)
         | _ -> None
 
-    let deserialize (eventName: string) (eventJson: string) (features: Map<string, Feature>) =
+    let deserialize (eventJson: string) (features: Map<string, Feature>) =
 
-        let maybeType =
-            tryResolveType eventName eventJson features
+        let maybeTypes = tryResolveTypes eventJson features
 
         let eventType =
-            match maybeType with
-            | Some t -> Some(typedefof<Metaflow.Event<_>>.MakeGenericType(t))
+            match maybeTypes with
+            | Some (opType, modelType) ->
+                Some
+                    (typedefof<FeatureOutput<_, _>>
+                        .MakeGenericType(opType, modelType))
             | None -> None
 
         match eventType with
@@ -94,14 +84,15 @@ module EventSourcing =
     type IEventStreamId<'T> = { Get: string -> string }
 
     type IEventSerializer =
-        abstract Deserialize: string -> string -> obj option
+        abstract Deserialize: string -> obj option
 
-    type EventSerializer(features: IDictionary<string, Feature>) =
+    type EventSerializer(features: Feature seq) =
+        let featureMap =
+            List.ofSeq features
+            |> List.map (fun kv -> (kv.Name, kv))
+            |> Map.ofList
+
         interface IEventSerializer with
-            member __.Deserialize (eventName: string) (eventJson: string) =
-                let featureMap =
-                    List.ofSeq features
-                    |> List.map (fun kv -> (kv.Key, kv.Value))
-                    |> Map.ofList
+            member __.Deserialize (eventJson: string) =
 
-                deserialize eventName eventJson featureMap
+                deserialize eventJson featureMap

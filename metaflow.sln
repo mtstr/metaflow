@@ -7,11 +7,13 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Metaflow.Core", "Metaflow.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Config", "Metaflow.Config\Metaflow.Config.csproj", "{1E75CB2C-35D2-4866-853B-965D3DED4FF4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.DefaultHost", "Metaflow.DefaultHost\Metaflow.DefaultHost.csproj", "{96D90827-CC03-453B-8B17-2AE737EEAD06}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Tests.Host", "Metaflow.Tests.Host\Metaflow.Tests.Host.csproj", "{96D90827-CC03-453B-8B17-2AE737EEAD06}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Metaflow", "Metaflow\Metaflow.fsproj", "{FF1D7E4D-6025-4123-9C6D-087F2B762B51}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Metaflow.Tests", "Metaflow.Tests\Metaflow.Tests.fsproj", "{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Metaflow.Tests.Client", "Metaflow.Tests.Client\Metaflow.Tests.Client.csproj", "{F687AE48-35E4-467F-A642-0148560A75D0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -86,5 +88,17 @@ Global
 		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|x64.Build.0 = Release|Any CPU
 		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|x86.ActiveCfg = Release|Any CPU
 		{E95D13C8-6F42-4567-9614-E98E3A7AFAF7}.Release|x86.Build.0 = Release|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Debug|x64.Build.0 = Debug|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Debug|x86.Build.0 = Debug|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Release|x64.ActiveCfg = Release|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Release|x64.Build.0 = Release|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Release|x86.ActiveCfg = Release|Any CPU
+		{F687AE48-35E4-467F-A642-0148560A75D0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

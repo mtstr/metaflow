@@ -11,23 +11,18 @@ open System.Text
 open System
 open FSharp.UMX
 
-type IFeatureGrain =
+type IFeatureGrain<'op, 'model, 'input> =
     inherit IGrainWithStringKey
-    abstract Call: FeatureCall -> Task<FeatureResult>
+    abstract Call: FeatureCall<'input> -> Task<FeatureResult>
 
-type IFeatureGrain<'state, 'di> =
-    inherit IFeatureGrain
-
-
-type FeatureGrain<'model, 'state, 'di>(eventStore: EventStoreClient,
+type FeatureGrain<'op, 'model, 'input>(eventStore: EventStoreClient,
                                        clusterClient: IClusterClient,
-                                       logger: ILogger<FeatureGrain<'model, 'state, 'di>>,
-                                       handler: FeatureHandler<'model, 'state, 'di>,
-                                       stateObservers: StateObserver<'model> seq,
-                                       service: IFeatureService<'di>) =
+                                       logger: ILogger<FeatureGrain<'input, 'model, 'op>>,
+                                       handler: FeatureHandler<'op, 'model, 'input>,
+                                       stateTriggers: StateTrigger<'model> seq) =
     inherit Grain()
 
-    member private this.SaveEvent(stream: string<eventStream>, event: Event<'model>) =
+    member private this.SaveEvent(stream: string<eventStream>, event: FeatureOutput<'op, 'model>, feature: Feature) =
 
         task {
             try
@@ -37,84 +32,72 @@ type FeatureGrain<'model, 'state, 'di>(eventStore: EventStoreClient,
                     |> ReadOnlyMemory<byte>
 
                 let eventData =
-                    EventData(Uuid.NewUuid(), event.Name(), jsonBytes)
+                    EventData(Uuid.NewUuid(), event.Name(feature), jsonBytes)
 
-                let streamRevision =
-                    Convert.ToUInt64(ExpectedVersion.Any)
-                    |> StreamRevision
+                let! _ = eventStore.AppendToStreamAsync(stream.ToString(), StreamState.Any, [ eventData ])
 
-                let! r = eventStore.AppendToStreamAsync(stream.ToString(), streamRevision, [ eventData ])
-
-
-                r |> ignore
-
-            with ex -> logger.LogCritical(50003 |> EventId, ex, ex.Message)
-
-            return true
+                return (Result.Ok())
+            with ex ->
+                logger.LogCritical(50003 |> EventId, ex, ex.Message)
+                return Result.Error ex
         }
 
-    interface IFeatureGrain<'state, 'di> with
-        member this.Call(call: FeatureCall) =
+    interface IFeatureGrain<'op, 'model, 'input> with
+        member this.Call(call) =
             task {
-                let! featureOutput =
-                    match (handler, call.Args.Value, service.Get()) with
-                    | (AggregateRootWithDI h, AggregateRootId id, Some s) -> task { return h id s }
-                    | _ -> task { return Ignore "" }
+                let! featureOutput = handler.Handler(call.Input)
 
-                let event =
-                    Metaflow.Event<'model>
-                        .FromOutput(featureOutput, (call.Feature))
+                let! saveResult = this.SaveEvent(%($"agg:{call.AggregateRootId}"), featureOutput, call.Feature)
 
-                let! saveResult = this.SaveEvent(%call.AggregateRootId, event)
-
-
-                let (result, modelChangeOption) =
+                let result =
                     match (featureOutput, saveResult) with
-                    | (Success m, true) -> (Ok, Some m)
-                    | (_, false) -> (ServerError "Failed to save event", None)
-                    | (Reject r, true) -> (RequestError r, None)
-                    | (Failure f, true) -> (ServerError f, None)
-                    | (Ignore _, true) -> (Ok, None)
+                    | (Succeeded _, Result.Ok _) -> Ok
+                    | (_, Result.Error ex) -> ServerError ex
+                    | (Rejected r, Result.Ok s) -> RequestError r
+                    | (Failed ex, Result.Ok s) -> ServerError ex
+                    | (Ignored _, Result.Ok _) -> Ok
 
-                let model =
-                    match modelChangeOption with
-                    | Some { Before = Some b; After = Some a } -> Some a
-                    | Some { Before = Some b; After = None } -> Some b
-                    | Some { Before = None; After = Some a } -> Some a
-                    | _ -> None
 
-                let ts =
-                    match model with
-                    | Some m ->
-                        stateObservers
-                        |> Seq.map (fun o ->
-                            clusterClient
-                                .GetGrain<IStateGrain<'model>>(o.StateIdResolver(m))
-                                .Call(modelChangeOption.Value)
-                            |> Async.AwaitTask)
-                        |> List.ofSeq
-                    | None -> []
-
-                ts |> List.iter Async.Start
+                //                let ts =
+//                    match featureOutput with
+//                    | Succeeded m ->
+//                        stateTriggers
+//                        |> Seq.map (fun o ->
+//                            clusterClient
+//                                .GetGrain<IStateGrain<'model>>(o.StateIdResolver(call.ModelId, m))
+//                                .Call(m)
+//                            |> Async.AwaitTask)
+//                        |> List.ofSeq
+//                    | None -> []
+//
+//                ts |> List.iter Async.Start
 
                 return result
             }
-module Features =
-    let execute call (clusterClient: IClusterClient) =
-        task {
-            let (stateType, serviceType) =
-                match (call.Feature.RequiredState, call.Feature.RequiredService) with
-                | (Some s, Some d) -> (s, d)
-                | (Some s, None) -> (s, typeof<UnitType>)
-                | (None, Some d) -> (typeof<UnitType>, d)
-                | (None, None) -> (typeof<UnitType>, typeof<UnitType>)
 
-            let featureGrainType =
-                typedefof<IFeatureGrain<_, _>>
-                    .MakeGenericType(stateType, serviceType)
+module FeatureHelper =
+    let execute<'op, 'model, 'input> (call: FeatureCall<'input>) (clusterClient: IClusterClient) =
+        task {
 
             let featureGrain =
-                clusterClient.GetGrain(featureGrainType, call.Id) :?> IFeatureGrain
+                clusterClient.GetGrain<IFeatureGrain<'op, 'model, 'input>>(call.Id)
 
-            return! featureGrain.Call(call)
+            let! result = featureGrain.Call(call)
+
+            return result
         }
+
+    let deleteValue<'m> (aggregate: string) (ver: int): FeatureHandler<Delete, 'm, unit> =
+        let f =
+            { Operation = Operation.DELETE
+              ConcurrencyScope = ConcurrencyScope.Aggregate
+              Model = typeof<'m>
+              ModelKind = ModelKind.OwnedValue aggregate
+              RequiredService = None
+              RequiredState = None
+              Version = ver }
+
+        let h =
+            fun _ -> async { return FeatureOutput<Delete, 'm>.Succeeded None }
+
+        { Feature = f; Handler = h }

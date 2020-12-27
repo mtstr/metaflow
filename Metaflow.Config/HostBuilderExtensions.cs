@@ -18,16 +18,99 @@ namespace Metaflow
 {
     public static class HostBuilderExtensions
     {
-        public static IHostBuilder AddMetaflow(this IHostBuilder builder, List<Assembly> assemblies = null)
+        public class FeaturesClientConfig
         {
-            builder.UseOrleans((Microsoft.Extensions.Hosting.HostBuilderContext ctx, ISiloBuilder siloBuilder) =>
+            private readonly IServiceCollection _services;
+
+            public FeaturesClientConfig(IServiceCollection services = null)
+            {
+                _services = services;
+            }
+
+
+            private FeaturesClientConfig AddFeature(Feature f)
+            {
+                _services.AddSingleton(_ => f);
+
+                return this;
+            }
+
+            public FeaturesClientConfig Delete<TModel>(string aggregate, int version = 1) =>
+                AddFeature(FeatureHelper.deleteValue<TModel>(aggregate, version).Feature);
+        }
+
+        public class FeaturesConfig
+        {
+            private readonly IServiceCollection _services;
+
+            public FeaturesConfig(IServiceCollection services = null)
+            {
+                _services = services;
+            }
+
+            public IReadOnlyCollection<Assembly> Assemblies => _assemblies.ToList().AsReadOnly();
+            private readonly HashSet<Assembly> _assemblies = new();
+
+            private FeaturesConfig AddFeature<TOp, TModel, TInput>(FeatureHandler<TOp, TModel, TInput> h)
+            {
+                _services.AddSingleton(_ => h.Feature);
+                _services.AddSingleton(_ => h);
+                _assemblies.Add(typeof(TModel).Assembly);
+                _assemblies.Add(typeof(TInput).Assembly);
+
+                return this;
+            }
+
+            public FeaturesConfig Delete<TModel>(string aggregate, int version = 1) =>
+                AddFeature(FeatureHelper.deleteValue<TModel>(aggregate, version));
+        }
+
+
+        public static IServiceCollection AddMetaflowClient(this IServiceCollection services,
+            MetaflowClientConfig config, Action<FeaturesClientConfig> featuresConfig)
+        {
+            featuresConfig(new FeaturesClientConfig(services));
+            services.AddSingleton<FeatureClient>();
+            services.AddSingleton(ctx =>
+                ctx.GetService<IOrleansClient>()?.GetClusterClient(typeof(IStateGrain<>).Assembly));
+            services.AddOrleansMultiClient(build =>
+            {
+                build.AddClient(opt =>
+                {
+                    opt.ClusterId = $"{config.ClusterName}Cluster";
+                    opt.ServiceId = $"{config.ClusterName}Service";
+
+                    opt.SetServiceAssembly(typeof(IStateGrain<>).Assembly);
+
+                    opt.Configure = b =>
+                    {
+                        if (config.Local)
+                        {
+                            b.UseLocalhostClustering(config.GatewayPort);
+                        }
+                        else
+                        {
+                            b.UseRedisClustering(o => o.ConnectionString = config.OrleansStorage);
+                        }
+
+                        b.ConfigureApplicationParts(parts =>
+                        {
+                            parts.AddApplicationPart(typeof(IStateGrain<>).Assembly).WithCodeGeneration();
+                            parts.AddApplicationPart(typeof(IFeatureGrain<,,>).Assembly).WithCodeGeneration();
+                            parts.AddApplicationPart(typeof(IConcurrencyScopeGrain).Assembly).WithCodeGeneration();
+                        });
+                    };
+                });
+            });
+            return services;
+        }
+
+        public static IHostBuilder AddMetaflow(this IHostBuilder builder, Action<FeaturesConfig> featuresBuilder)
+        {
+            builder.UseOrleans((ctx, siloBuilder) =>
             {
                 var config = ctx.Configuration.GetSection("Metaflow").Get<MetaflowConfig>();
-
-                List<Assembly> metaflowAssemblies = assemblies ?? config.Assemblies.Where(a => !string.IsNullOrEmpty(a))
-                    .Select(a => AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(a))).ToList();
-
-
+                FeaturesConfig featuresConfig = new FeaturesConfig();
                 siloBuilder
                     .AddCustomStorageBasedLogConsistencyProviderAsDefault()
                     .Configure<ClusterOptions>(opts =>
@@ -35,21 +118,11 @@ namespace Metaflow
                         opts.ClusterId = $"{config.ClusterName}Cluster";
                         opts.ServiceId = $"{config.ClusterName}Service";
                     })
-                    .AddRedisGrainStorage("domainState")
-                    .ConfigureApplicationParts(parts =>
-                    {
-                        parts.AddApplicationPart(typeof(IStateGrain<>).Assembly).WithCodeGeneration();
-                        parts.AddApplicationPart(typeof(IFeatureGrain<,>).Assembly).WithCodeGeneration();
-                        parts.AddApplicationPart(typeof(IAggregateGrain).Assembly).WithCodeGeneration();
-
-                        foreach (var assembly in metaflowAssemblies)
-                        {
-                            parts.AddApplicationPart(assembly).WithCodeGeneration();
-                        }
-                    })
+                    .AddRedisGrainStorage("domainState", opt => opt.DataConnectionString = config.OrleansStorage)
                     .ConfigureServices(services =>
                     {
-                        services.AddApplicationInsightsTelemetry();
+                        featuresConfig = new FeaturesConfig(services);
+                        featuresBuilder(featuresConfig);
 
                         services.AddHealthChecks();
 
@@ -73,6 +146,17 @@ namespace Metaflow
                                     }
                                 };
                         });
+                    })
+                    .ConfigureApplicationParts(parts =>
+                    {
+                        parts.AddApplicationPart(typeof(IStateGrain<>).Assembly).WithCodeGeneration();
+                        parts.AddApplicationPart(typeof(IFeatureGrain<,,>).Assembly).WithCodeGeneration();
+                        parts.AddApplicationPart(typeof(IConcurrencyScopeGrain).Assembly).WithCodeGeneration();
+
+                        foreach (var assembly in featuresConfig.Assemblies)
+                        {
+                            parts.AddApplicationPart(assembly).WithCodeGeneration();
+                        }
                     });
 
                 if (config.Local)

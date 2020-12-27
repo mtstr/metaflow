@@ -11,7 +11,7 @@ open System.Collections.Generic
 
 type IStateGrain<'state> =
     inherit IGrainWithStringKey
-    abstract Call<'model> : Mutation<'model> -> Task
+    abstract Call<'op,'model> : FeatureOutput<'op,'model> -> Task
 
 
 type StateGrain<'state>([<PersistentState("domainState")>] state: IPersistentState<'state>,
@@ -21,7 +21,7 @@ type StateGrain<'state>([<PersistentState("domainState")>] state: IPersistentSta
 
 
     interface IStateGrain<'state> with
-        member this.Call<'model>(modelChange: Mutation<'model>) =
+        member this.Call<'op,'model>(modelChange: FeatureOutput<'op,'model>) =
             unitTask {
                 match stateHandlers.ContainsKey(typeof<'model>) with
                 | true ->
