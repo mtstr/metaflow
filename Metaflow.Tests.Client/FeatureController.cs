@@ -21,10 +21,10 @@ namespace Metaflow.Tests.Client
         {
             var result = await _featureClient.Delete<SampleModel>(id, false);
 
-            if (result.IsOk) return Ok();
-            if (result.IsNotFound) return NotFound();
-            if (result.IsRequestError) return BadRequest();
-            if (result.IsServerError) return StatusCode(500, result);
+            if (result.FeatureResult.IsOk) return Ok();
+            if (result.FeatureResult.IsNotFound) return NotFound();
+            if (result.FeatureResult.IsRequestError) return BadRequest();
+            if (result.FeatureResult.IsServerError) return StatusCode(500, result);
             
             return NoContent();
         }

@@ -4,6 +4,8 @@ open System.Text.Json.Serialization
 open System.Text.Json
 open System.Reflection
 open Microsoft.AspNetCore.Http
+open Orleans
+open FSharp.Control.Tasks
 
 type State<'T>(value: 'T option) =
     new() = State(None)
@@ -29,7 +31,17 @@ type State<'T>(value: 'T option) =
         match mi with
         | Some method -> Some(method.Invoke(value, [| event :> obj |]) :?> 'T)
         | None -> value
+module Features =
+    let execute<'op, 'model, 'input> (call: FeatureCall<'input>) (clusterClient: IClusterClient) =
+        task {
 
+            let featureGrain =
+                clusterClient.GetGrain<IFeatureGrain<'op, 'model, 'input>>(call.Id)
+
+            let! result = featureGrain.Call(call)
+
+            return result
+        }
 module Json =
     let converter =
         JsonFSharpConverter
@@ -44,6 +56,7 @@ module Json =
     let options =
         let options = JsonSerializerOptions()
         options.Converters.Add(converter)
+        options.IgnoreNullValues <- true
         options.PropertyNameCaseInsensitive <- true
         options.PropertyNamingPolicy <- JsonNamingPolicy.CamelCase
         options
@@ -52,6 +65,7 @@ module Json =
 
 module EventSourcing =
     type EventDef = { Feature: string }
+    type EventData<'op, 'model> = { Data: FeatureOutput<'op, 'model> }
 
     let private tryResolveTypes (eventJson: string) (features: Map<string, Feature>) =
 
@@ -73,18 +87,18 @@ module EventSourcing =
             match maybeTypes with
             | Some (opType, modelType) ->
                 Some
-                    (typedefof<FeatureOutput<_, _>>
+                    (typedefof<EventData<_, _>>
                         .MakeGenericType(opType, modelType))
             | None -> None
 
         match eventType with
-        | Some t -> Some(JsonSerializer.Deserialize(eventJson, t, Json.options))
+        | Some t -> Some((JsonSerializer.Deserialize(eventJson, t, Json.options) :?> EventData<_,_>).Data)
         | None -> None
 
     type IEventStreamId<'T> = { Get: string -> string }
 
     type IEventSerializer =
-        abstract Deserialize: string -> obj option
+        abstract Deserialize: string -> FeatureOutput<_,_> option
 
     type EventSerializer(features: Feature seq) =
         let featureMap =
@@ -93,6 +107,6 @@ module EventSourcing =
             |> Map.ofList
 
         interface IEventSerializer with
-            member __.Deserialize (eventJson: string) =
+            member __.Deserialize(eventJson: string) =
 
                 deserialize eventJson featureMap

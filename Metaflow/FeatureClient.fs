@@ -1,43 +1,45 @@
 namespace Metaflow
 
+open System
 open Metaflow
+open Metaflow.Workflows
 open Orleans
 open FSharp.Control.Tasks
+open Serilog
 
-type FeatureClient(clusterClient: IClusterClient, features: Feature seq) =
+type FeatureClient(clusterClient: IClusterClient, workflows: Workflow seq) =
+    let workflowMap =
+        workflows
+        |> Seq.map (fun f -> ((f.Feature.Model.FullName, f.Feature.Operation), f))
+        |> Map.ofSeq
+
     member this.Delete<'model>(aggregateRootId: string, awaitState: bool) =
         task {
-            let maybeFeature =
-                features
-                |> List.ofSeq
-                |> List.tryFind (fun f -> f.Model = typeof<'model> && f.Operation = DELETE)
+            let workflowOption =
+                workflowMap
+                |> Map.tryFind (typeof<'model>.FullName, Operation.DELETE)
 
             return!
-                match maybeFeature with
-                | None -> task { return NotFound }
-                | Some feature ->
+                match workflowOption with
+                | None ->
+                    task {
+                        return
+                            { FeatureResult = NotFound
+                              StepError = None }
+                    }
+                | Some workflow ->
                     let call =
-                        { Feature = feature
+                        { Feature = workflow.Feature
                           Input = Id(OwnedValueId { AggregateRootId = aggregateRootId })
                           AwaitState = awaitState }
 
-                    match feature.ConcurrencyScope with
-                    | Aggregate ->
-                        task {
-                            let grain =
-                                clusterClient.GetGrain<IConcurrencyScopeGrain>($"agg_{aggregateRootId}")
-
-                            let! result = grain.Execute<Delete, 'model, UnitType>(call)
-
-                            return result
-                        }
-                    | Entity ->
-                        task {
-                            let grain =
-                                clusterClient.GetGrain<IConcurrencyScopeGrain>($"ent_{aggregateRootId}")
-
-                            return! grain.Execute<Delete, 'model, UnitType>(call)
-                        }
-                    | Feature -> task { return! FeatureHelper.execute<Delete, 'model, UnitType> call clusterClient }
-
+                    task {
+                        return!
+                            run<unit, Delete, 'model>
+                                workflow
+                                call
+                                clusterClient
+                                { RequestId = Guid.NewGuid().ToString() }
+                                Log.Logger
+                    }
         }

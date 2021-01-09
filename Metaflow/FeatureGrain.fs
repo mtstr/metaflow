@@ -1,6 +1,5 @@
 namespace Metaflow
 
-open EventStore.ClientAPI
 open Metaflow
 open Orleans
 open System.Threading.Tasks
@@ -11,28 +10,29 @@ open System.Text
 open System
 open FSharp.UMX
 
-type IFeatureGrain<'op, 'model, 'input> =
-    inherit IGrainWithStringKey
-    abstract Call: FeatureCall<'input> -> Task<FeatureResult>
 
 type FeatureGrain<'op, 'model, 'input>(eventStore: EventStoreClient,
-                                       clusterClient: IClusterClient,
                                        logger: ILogger<FeatureGrain<'input, 'model, 'op>>,
-                                       handler: FeatureHandler<'op, 'model, 'input>,
-                                       stateTriggers: StateTrigger<'model> seq) =
+                                       handler: FeatureHandler<'op, 'model, 'input>) =
     inherit Grain()
 
-    member private this.SaveEvent(stream: string<eventStream>, event: FeatureOutput<'op, 'model>, feature: Feature) =
+    member private this.SaveEvent(stream: string<eventStream>, output: FeatureOutput<'op, 'model>, feature: Feature) =
 
         task {
             try
+                let event =
+                    {| output = output
+                       operation = typeof<'op>.Name
+                       model = typeof<'model>.Name
+                       feature = feature.Name
+                       version = feature.Version |}
 
                 let jsonBytes =
                     Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(event, Json.options))
                     |> ReadOnlyMemory<byte>
 
                 let eventData =
-                    EventData(Uuid.NewUuid(), event.Name(feature), jsonBytes)
+                    EventData(Uuid.NewUuid(), output.Name(feature), jsonBytes)
 
                 let! _ = eventStore.AppendToStreamAsync(stream.ToString(), StreamState.Any, [ eventData ])
 
@@ -51,53 +51,11 @@ type FeatureGrain<'op, 'model, 'input>(eventStore: EventStoreClient,
 
                 let result =
                     match (featureOutput, saveResult) with
-                    | (Succeeded _, Result.Ok _) -> Ok
+                    | (Done m, Result.Ok _) -> Ok m
                     | (_, Result.Error ex) -> ServerError ex
-                    | (Rejected r, Result.Ok s) -> RequestError r
-                    | (Failed ex, Result.Ok s) -> ServerError ex
-                    | (Ignored _, Result.Ok _) -> Ok
-
-
-                //                let ts =
-//                    match featureOutput with
-//                    | Succeeded m ->
-//                        stateTriggers
-//                        |> Seq.map (fun o ->
-//                            clusterClient
-//                                .GetGrain<IStateGrain<'model>>(o.StateIdResolver(call.ModelId, m))
-//                                .Call(m)
-//                            |> Async.AwaitTask)
-//                        |> List.ofSeq
-//                    | None -> []
-//
-//                ts |> List.iter Async.Start
+                    | (Rejected r, Result.Ok _) -> RequestError r
+                    | (Failed ex, Result.Ok _) -> ServerError ex
+                    | (Ignored _, Result.Ok _) -> Ok None
 
                 return result
             }
-
-module FeatureHelper =
-    let execute<'op, 'model, 'input> (call: FeatureCall<'input>) (clusterClient: IClusterClient) =
-        task {
-
-            let featureGrain =
-                clusterClient.GetGrain<IFeatureGrain<'op, 'model, 'input>>(call.Id)
-
-            let! result = featureGrain.Call(call)
-
-            return result
-        }
-
-    let deleteValue<'m> (aggregate: string) (ver: int): FeatureHandler<Delete, 'm, unit> =
-        let f =
-            { Operation = Operation.DELETE
-              ConcurrencyScope = ConcurrencyScope.Aggregate
-              Model = typeof<'m>
-              ModelKind = ModelKind.OwnedValue aggregate
-              RequiredService = None
-              RequiredState = None
-              Version = ver }
-
-        let h =
-            fun _ -> async { return FeatureOutput<Delete, 'm>.Succeeded None }
-
-        { Feature = f; Handler = h }

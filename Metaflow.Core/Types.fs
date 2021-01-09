@@ -80,8 +80,8 @@ type Nonsuccess<'T> =
 type UnitType = unit
 
 [<Serializable>]
-type FeatureResult =
-    | Ok
+type FeatureResult<'model> =
+    | Ok of 'model option
     | NotFound
     | RequestError of string
     | ServerError of Exception
@@ -90,7 +90,7 @@ type FeatureResult =
 
 [<Serializable>]
 type FeatureOutput<'op, 'model> =
-    | Succeeded of 'model option
+    | Done of 'model option
     | Rejected of string
     | Failed of Exception
     | Ignored of string
@@ -158,12 +158,17 @@ type FeatureCall<'input> =
 
     member this.Id =
         $"ftr:{this.Feature.Name}:{this.ModelId}"
-
-type StateTrigger<'model> =
-    { StateType: Type
-      StateIdResolver: ModelId -> 'model -> string }
-
-type FeatureHandler<'op,'model,'input> = {
-    Feature: Feature
-    Handler: FeatureInput<'input> -> Async<FeatureOutput<'op, 'model>>
-}
+        
+        
+type Step =
+        { Name: string
+          Handler: Type
+          Workflow: string
+          Background: bool }
+type Workflow =
+        { Name: string
+          Feature: Feature
+          Steps: Step list }
+type FeatureHandler<'op, 'model, 'input> =
+    { Workflow: Workflow
+      Handler: FeatureInput<'input> -> Async<FeatureOutput<'op, 'model>> }
