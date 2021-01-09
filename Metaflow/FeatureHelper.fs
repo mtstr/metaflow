@@ -12,7 +12,7 @@ module FeatureHelper =
           Feature = feature
           Steps = [] }
 
-    let private step<'a, 'b, 'c, 'step> (workflow: FeatureHandler<'a, 'b, 'c>) background =
+    let private step<'a, 'b, 'c, 'step  when 'step :> IStepHandler<'b>> (workflow: FeatureHandler<'a, 'b, 'c>) background =
         { workflow with
               Workflow =
                   { workflow.Workflow with
@@ -23,8 +23,8 @@ module FeatureHelper =
                               Background = background }
                             :: workflow.Workflow.Steps } }
 
-    let andf<'a, 'b, 'c, 'step> (workflow: FeatureHandler<'a, 'b, 'c>) = step<'a, 'b, 'c, 'step> workflow false
-    let andb<'a, 'b, 'c, 'step> (workflow: FeatureHandler<'a, 'b, 'c>) = step<'a, 'b, 'c, 'step> workflow true
+    let andf<'a, 'b, 'c, 'step when 'step :> IStepHandler<'b>> (workflow: FeatureHandler<'a, 'b, 'c>) = step<'a, 'b, 'c, 'step> workflow false
+    let andb<'a, 'b, 'c, 'step  when 'step :> IStepHandler<'b>> (workflow: FeatureHandler<'a, 'b, 'c>) = step<'a, 'b, 'c, 'step> workflow true
 
     let deleteValueFeature<'m> (aggregate: string) (ver: int) =
 
@@ -44,6 +44,6 @@ module FeatureHelper =
 
     let deleteValue<'m> (aggregate: string) (ver: int) =
         (aggregate, ver)
-        ||> deleteValueFeature
+        ||> deleteValueFeature<'m>
         |> workflow
         |> autoDone<Delete, 'm>

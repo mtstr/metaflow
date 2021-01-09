@@ -26,15 +26,15 @@ namespace Metaflow.Tests.Host
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
 
             var b = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                })
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
                 .ConfigureAppConfiguration((_, config) => config
-                .AddEnvironmentVariables()
-                .AddUserSecrets<Startup>());
-                
-            b.AddMetaflow(cfg => { cfg.Delete<SampleModel>("sampleAggregate"); });
+                    .AddEnvironmentVariables()
+                    .AddUserSecrets<Startup>());
+
+            b.AddMetaflow(cfg =>
+            {
+                cfg.Delete<SampleModel>("sampleAggregate", f: w => w.Then<SampleModel, FirstStepHandler>());
+            });
 
             return b;
         }

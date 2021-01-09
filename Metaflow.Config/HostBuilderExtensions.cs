@@ -8,6 +8,7 @@ using EventStore.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.FSharp.Core;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
@@ -26,15 +27,20 @@ namespace Metaflow
             }
 
 
-            private WorkflowsClientConfig AddWorkflow(Feature f)
+            private WorkflowsClientConfig AddWorkflow(Workflow f)
             {
                 _services.AddSingleton(_ => f);
 
                 return this;
             }
 
-            public WorkflowsClientConfig Delete<TModel>(string aggregate, int version = 1) =>
-                AddWorkflow(FeatureHelper.deleteValueFeature<TModel>(aggregate, version));
+            public WorkflowsClientConfig Delete<TModel>(string aggregate, int version = 1,
+                Func<FeatureHandler<Delete, TModel, Unit>, FeatureHandler<Delete, TModel, Unit>> f = null)
+            {
+                var w = FeatureHelper.deleteValue<TModel>(aggregate, version);
+                if (f != null) w = f(w);
+                return AddWorkflow(w.Workflow);
+            }
         }
 
         public class WorkflowsConfig
@@ -56,19 +62,37 @@ namespace Metaflow
                 _assemblies.Add(typeof(TModel).Assembly);
                 _assemblies.Add(typeof(TInput).Assembly);
 
+                foreach (var step in h.Workflow.Steps)
+                {
+                    _services.AddScoped(step.Handler);
+                }
+
                 return this;
             }
 
-            public WorkflowsConfig Delete<TModel>(string aggregate, int version = 1) =>
-                AddWorkflow(FeatureHelper.deleteValue<TModel>(aggregate, version).Then());
+            public WorkflowsConfig Delete<TModel>(string aggregate, int version = 1,
+                Func<FeatureHandler<Delete, TModel, Unit>, FeatureHandler<Delete, TModel, Unit>> f = null)
+            {
+                var w = FeatureHelper.deleteValue<TModel>(aggregate, version);
+                if (f != null) w = f(w);
+                return AddWorkflow(w);
+            }
+        }
+
+        public static FeatureHandler<Delete, TModel, Unit> Then<TModel, TH>(this FeatureHandler<Delete, TModel, Unit> h)
+            where TH : IStepHandler<TModel>
+        {
+            return FeatureHelper.andf<Delete, TModel, Unit, TH>(h);
         }
 
         public static FeatureHandler<T1, T2, T3> Then<T1, T2, T3, TH>(this FeatureHandler<T1, T2, T3> h)
+            where TH : IStepHandler<T2>
         {
             return FeatureHelper.andf<T1, T2, T3, TH>(h);
         }
 
         public static FeatureHandler<T1, T2, T3> ThenInBackground<T1, T2, T3, TH>(this FeatureHandler<T1, T2, T3> h)
+            where TH : IStepHandler<T2>
         {
             return FeatureHelper.andb<T1, T2, T3, TH>(h);
         }

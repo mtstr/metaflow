@@ -2,7 +2,6 @@ namespace Metaflow
 
 open System
 open Metaflow
-open Metaflow.Workflows
 open Orleans
 open FSharp.Control.Tasks
 open Serilog
@@ -15,8 +14,9 @@ type FeatureClient(clusterClient: IClusterClient, workflows: Workflow seq) =
 
     member this.Delete<'model>(aggregateRootId: string, awaitState: bool) =
         task {
+            let m = workflowMap
             let workflowOption =
-                workflowMap
+                m
                 |> Map.tryFind (typeof<'model>.FullName, Operation.DELETE)
 
             return!
@@ -35,7 +35,7 @@ type FeatureClient(clusterClient: IClusterClient, workflows: Workflow seq) =
 
                     task {
                         return!
-                            run<unit, Delete, 'model>
+                            Workflows.run<unit, Delete, 'model>
                                 workflow
                                 call
                                 clusterClient

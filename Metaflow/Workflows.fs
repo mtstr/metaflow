@@ -8,27 +8,41 @@ open Serilog
 open FSharp.Control.Tasks
 open FSharp.Control
 
+
+type RequestContext = { RequestId: string }
+
+type StepResult =
+    | Done
+    | Skipped
+    | Error of string
+    | Exception of Exception
+    member this.Success =
+        match this with
+        | Done -> true
+        | _ -> false
+
+type IStepHandler<'model> =
+    abstract Call: RequestContext * FeatureResult<'model> -> Task<StepResult>
+
+type IStepGrain<'model> =
+    inherit IGrainWithStringKey
+    abstract Call: RequestContext * FeatureResult<'model> -> Task<StepResult>
+
+type IStepGrain<'model, 'handler when 'handler :> IStepHandler<'model>> =
+    inherit IStepGrain<'model>
+
+type StepGrain<'model, 'handler when 'handler :> IStepHandler<'model>>(handler: 'handler) =
+    inherit Grain()
+
+    interface IStepGrain<'model, 'handler> with
+        member this.Call(rc, result) =
+            task { return! handler.Call(rc, result) }
+
+type WorkflowResult<'model> =
+    { FeatureResult: FeatureResult<'model>
+      StepError: StepResult option }
+
 module Workflows =
-    type RequestContext = { RequestId: string }
-
-    type StepResult =
-        | Done
-        | Skipped
-        | Error of string
-        | Exception of Exception
-        member this.Success =
-            match this with
-            | Done -> true
-            | _ -> false
-
-    type IStepGrain<'handler> =
-        inherit IGrainWithStringKey
-        abstract Call<'model> : (RequestContext * FeatureResult<'model>) -> Task<StepResult>
-
-    type WorkflowResult<'model> =
-        { FeatureResult: FeatureResult<'model>
-          StepError: StepResult option }
-
     let logResult result step wf rc (logger: ILogger) =
         let inf =
             "Performed {Step} as part of {Workflow}. Request: {RequestId}"
@@ -49,16 +63,16 @@ module Workflows =
         | Error e -> logger.Error(err e, step, wf, rc.RequestId)
 
 
-    let apply (step: Step) (id: string) rc mu (clusterClient: IClusterClient) logger =
+    let apply<'model> (step: Step) (id: string) rc (mu: FeatureResult<'model>) (clusterClient: IClusterClient) logger =
         async {
             let f () =
                 task {
                     let grainType =
-                        typeof<IStepGrain<_>>
-                            .MakeGenericType(step.Handler)
+                        typedefof<IStepGrain<_, _>>
+                            .MakeGenericType(typeof<'model>, step.Handler)
 
                     let grain =
-                        clusterClient.GetGrain(grainType, id) :?> IStepGrain<_>
+                        clusterClient.GetGrain(grainType, id) :?> IStepGrain<'model>
 
                     let! result = grain.Call(rc, mu)
 
@@ -80,10 +94,10 @@ module Workflows =
                 return Some r
         }
 
-    let private _apply id (requestContext: RequestContext) mutation clusterClient (steps: Step list) logger =
+    let private _apply<'m> id (requestContext: RequestContext) mutation clusterClient (steps: Step list) logger =
         asyncSeq {
             for step in steps do
-                let! r = apply step id requestContext mutation clusterClient logger
+                let! r = apply<'m> step id requestContext mutation clusterClient logger
                 if r.IsSome then yield r.Value
         }
 
@@ -110,7 +124,7 @@ module Workflows =
 
 
             let stepResults =
-                _apply call.ModelId requestContext featureResult clusterClient workflow.Steps logger
+                _apply<'model> call.ModelId requestContext featureResult clusterClient workflow.Steps logger
 
             let! stepError =
                 stepResults
@@ -124,7 +138,7 @@ module Workflows =
 
         }
 
-    
+
 
     let private g f =
         async {
