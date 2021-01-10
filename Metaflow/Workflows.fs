@@ -38,6 +38,7 @@ type StepGrain<'model, 'handler when 'handler :> IStepHandler<'model>>(handler: 
         member this.Call(rc, result) =
             task { return! handler.Call(rc, result) }
 
+[<Serializable>]
 type WorkflowResult<'model> =
     { FeatureResult: FeatureResult<'model>
       StepError: StepResult option }

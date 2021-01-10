@@ -23,9 +23,7 @@ namespace Metaflow.Tests.Client
 
             var config = Configuration.GetSection("Metaflow").Get<MetaflowClientConfig>();
 
-            services.AddMetaflowClient(config,
-                features => features.Delete<SampleModel>("sampleAggregate",
-                    f: w => w.Then<SampleModel, FirstStepHandler>()));
+            // services.AddMetaflowClient(config, features => features.Add<SampleModel>() );
 
             services.AddSwaggerGen(c =>
             {

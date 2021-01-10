@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using EventStore.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,70 +12,8 @@ using Orleans.Hosting;
 
 namespace Metaflow
 {
-    public static class HostBuilderExtensions
+    public static class ConfigExtensions
     {
-        public class WorkflowsClientConfig
-        {
-            private readonly IServiceCollection _services;
-
-            public WorkflowsClientConfig(IServiceCollection services = null)
-            {
-                _services = services;
-            }
-
-
-            private WorkflowsClientConfig AddWorkflow(Workflow f)
-            {
-                _services.AddSingleton(_ => f);
-
-                return this;
-            }
-
-            public WorkflowsClientConfig Delete<TModel>(string aggregate, int version = 1,
-                Func<FeatureHandler<Delete, TModel, Unit>, FeatureHandler<Delete, TModel, Unit>> f = null)
-            {
-                var w = FeatureHelper.deleteValue<TModel>(aggregate, version);
-                if (f != null) w = f(w);
-                return AddWorkflow(w.Workflow);
-            }
-        }
-
-        public class WorkflowsConfig
-        {
-            private readonly IServiceCollection _services;
-
-            public WorkflowsConfig(IServiceCollection services = null)
-            {
-                _services = services;
-            }
-
-            public IReadOnlyCollection<Assembly> Assemblies => _assemblies.ToList().AsReadOnly();
-            private readonly HashSet<Assembly> _assemblies = new();
-
-            private WorkflowsConfig AddWorkflow<TOp, TModel, TInput>(FeatureHandler<TOp, TModel, TInput> h)
-            {
-                _services.AddSingleton(_ => h.Workflow);
-                _services.AddSingleton(_ => h);
-                _assemblies.Add(typeof(TModel).Assembly);
-                _assemblies.Add(typeof(TInput).Assembly);
-
-                foreach (var step in h.Workflow.Steps)
-                {
-                    _services.AddScoped(step.Handler);
-                }
-
-                return this;
-            }
-
-            public WorkflowsConfig Delete<TModel>(string aggregate, int version = 1,
-                Func<FeatureHandler<Delete, TModel, Unit>, FeatureHandler<Delete, TModel, Unit>> f = null)
-            {
-                var w = FeatureHelper.deleteValue<TModel>(aggregate, version);
-                if (f != null) w = f(w);
-                return AddWorkflow(w);
-            }
-        }
-
         public static FeatureHandler<Delete, TModel, Unit> Then<TModel, TH>(this FeatureHandler<Delete, TModel, Unit> h)
             where TH : IStepHandler<TModel>
         {
@@ -98,9 +33,12 @@ namespace Metaflow
         }
 
         public static IServiceCollection AddMetaflowClient(this IServiceCollection services,
-            MetaflowClientConfig config, Action<WorkflowsClientConfig> featuresConfig)
+            MetaflowClientConfig config
+            , Action<WorkflowsClientBuilder> featuresConfig
+        )
         {
-            featuresConfig(new WorkflowsClientConfig(services));
+            var features = new WorkflowsClientBuilder();
+            featuresConfig(features);
             services.AddSingleton<FeatureClient>();
             services.AddSingleton(ctx =>
                 ctx.GetService<IOrleansClient>()?.GetClusterClient(typeof(IConcurrencyScopeGrain).Assembly));
@@ -112,6 +50,11 @@ namespace Metaflow
                     opt.ServiceId = $"{config.ClusterName}Service";
 
                     opt.SetServiceAssembly(typeof(IConcurrencyScopeGrain).Assembly);
+
+                    foreach (var assembly in features.Assemblies)
+                    {
+                        opt.SetServiceAssembly(assembly);
+                    }
 
                     opt.Configure = b =>
                     {
@@ -128,6 +71,10 @@ namespace Metaflow
                         {
                             parts.AddApplicationPart(typeof(IFeatureGrain<,,>).Assembly).WithCodeGeneration();
                             parts.AddApplicationPart(typeof(IConcurrencyScopeGrain).Assembly).WithCodeGeneration();
+                            foreach (var assembly in features.Assemblies)
+                            {
+                                parts.AddApplicationPart(assembly).WithCodeGeneration();
+                            }
                         });
                     };
                 });
@@ -135,12 +82,57 @@ namespace Metaflow
             return services;
         }
 
-        public static IHostBuilder AddMetaflow(this IHostBuilder builder, Action<WorkflowsConfig> featuresBuilder)
+        public static IHostBuilder AddMetaflowClient(this IHostBuilder builder,
+            Action<WorkflowsClientBuilder> featuresBuilder)
         {
+            builder.ConfigureServices((ctx, services) =>
+            {
+                var features = new WorkflowsClientBuilder();
+                featuresBuilder(features);
+                
+                var config = ctx.Configuration.GetSection("Metaflow").Get<MetaflowClientConfig>();
+                var clientBuilder = new ClientBuilder()
+                    .Configure<ClusterOptions>(opts =>
+                    {
+                        opts.ClusterId = $"{config.ClusterName}Cluster";
+                        opts.ServiceId = $"{config.ClusterName}Service";
+                    })
+                    .ConfigureApplicationParts(parts =>
+                    {
+                        parts.AddApplicationPart(typeof(IFeatureGrain<,,>).Assembly).WithCodeGeneration();
+                        parts.AddApplicationPart(typeof(IConcurrencyScopeGrain).Assembly).WithCodeGeneration();
+                        foreach (var assembly in features.Assemblies)
+                        {
+                            parts.AddApplicationPart(assembly);
+                        }
+                    });
+                if (config.Local)
+                {
+                    clientBuilder.UseLocalhostClustering(config.GatewayPort);
+                }
+                else
+                {
+                    clientBuilder.UseRedisClustering(o => o.ConnectionString = config.OrleansStorage);
+                }
+
+                var client = clientBuilder.Build();
+                client.Connect().Wait();
+                services.AddSingleton<IClusterClient>(client);
+                services.AddSingleton<FeatureClient>();
+            });
+
+            return builder;
+        }
+
+        public static IHostBuilder AddMetaflow(this IHostBuilder builder, Action<WorkflowsBuilder> featuresBuilder)
+        {
+            WorkflowsBuilder workflowsBuilder = new WorkflowsBuilder();
+
+
             builder.UseOrleans((ctx, siloBuilder) =>
             {
                 var config = ctx.Configuration.GetSection("Metaflow").Get<MetaflowConfig>();
-                WorkflowsConfig workflowsConfig = new WorkflowsConfig();
+
                 siloBuilder
                     .Configure<ClusterOptions>(opts =>
                     {
@@ -150,8 +142,8 @@ namespace Metaflow
                     .AddRedisGrainStorage("domainState", opt => opt.DataConnectionString = config.OrleansStorage)
                     .ConfigureServices(services =>
                     {
-                        workflowsConfig = new WorkflowsConfig(services);
-                        featuresBuilder(workflowsConfig);
+                        workflowsBuilder.Services = services;
+                        featuresBuilder(workflowsBuilder);
 
                         services.AddHealthChecks();
 
@@ -178,9 +170,10 @@ namespace Metaflow
                     })
                     .ConfigureApplicationParts(parts =>
                     {
+                        featuresBuilder(workflowsBuilder);
                         parts.AddApplicationPart(typeof(IFeatureGrain<,,>).Assembly).WithCodeGeneration();
 
-                        foreach (var assembly in workflowsConfig.Assemblies)
+                        foreach (var assembly in workflowsBuilder.Assemblies)
                         {
                             parts.AddApplicationPart(assembly).WithCodeGeneration();
                         }

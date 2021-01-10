@@ -19,7 +19,7 @@
     <Compile Include="Monitoring.fs" />
     <Compile Include="Workflows.fs" />
     <Compile Include="FeatureHelper.fs" />
-    <Compile Include="FeatureClient.fs" />
+    <Compile Include="FeatureClientGrain.fs" />
   </ItemGroup>
 
   <ItemGroup>

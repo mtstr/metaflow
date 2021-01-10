@@ -4,6 +4,8 @@ using Metaflow.Tests.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Orleans.CodeGeneration;
+// [assembly: KnownAssembly(typeof(Metaflow.Tests.Client.SampleModel))]
 
 namespace Metaflow.Tests.Host
 {
