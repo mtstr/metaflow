@@ -1,6 +1,5 @@
 namespace Metaflow
 
-open System
 open System.Threading.Tasks
 open Metaflow
 open Orleans
@@ -9,24 +8,12 @@ open FSharp.Control.Tasks
 open FSharp.Control
 
 
-type RequestContext = { RequestId: string }
-
-type StepResult =
-    | Done
-    | Skipped
-    | Error of string
-    | Exception of Exception
-    member this.Success =
-        match this with
-        | Done -> true
-        | _ -> false
-
 type IStepHandler<'model> =
-    abstract Call: RequestContext * FeatureResult<'model> -> Task<StepResult>
+    abstract Call: RequestContext * Result<'model option, FeatureFailure> -> Task<StepResult>
 
 type IStepGrain<'model> =
     inherit IGrainWithStringKey
-    abstract Call: RequestContext * FeatureResult<'model> -> Task<StepResult>
+    abstract Call: RequestContext * Result<'model option, FeatureFailure> -> Task<StepResult>
 
 type IStepGrain<'model, 'handler when 'handler :> IStepHandler<'model>> =
     inherit IStepGrain<'model>
@@ -38,13 +25,8 @@ type StepGrain<'model, 'handler when 'handler :> IStepHandler<'model>>(handler: 
         member this.Call(rc, result) =
             task { return! handler.Call(rc, result) }
 
-[<Serializable>]
-type WorkflowResult<'model> =
-    { FeatureResult: FeatureResult<'model>
-      StepError: StepResult option }
-
 module Workflows =
-    let logResult result step wf rc (logger: ILogger) =
+    let logResult (result: StepResult) step wf rc (logger: ILogger) =
         let inf =
             "Performed {Step} as part of {Workflow}. Request: {RequestId}"
 
@@ -58,13 +40,21 @@ module Workflows =
             sprintf "Error {Step} during {Workflow}: %s. Request: {RequestId}" e
 
         match result with
-        | Done -> logger.Information(inf, step, wf, rc.RequestId)
-        | Exception ex -> logger.Error(ex, exc, step, wf, rc.RequestId)
+        | StepResult.Done -> logger.Information(inf, step, wf, rc.RequestId)
         | Skipped -> logger.Warning(wrn, step, wf, rc.RequestId)
-        | Error e -> logger.Error(err e, step, wf, rc.RequestId)
+        | Failed f ->
+            match f with
+            | StepFailure.Exception ex -> logger.Error(ex, exc, step, wf, rc.RequestId)
+            | InvalidOperation e -> logger.Error(err e, step, wf, rc.RequestId)
 
 
-    let apply<'model> (step: Step) (id: string) rc (mu: FeatureResult<'model>) (clusterClient: IClusterClient) logger =
+    let apply<'model> (step: Step)
+                      (id: string)
+                      rc
+                      (mu: Result<'model option, FeatureFailure>)
+                      (clusterClient: IClusterClient)
+                      logger
+                      =
         async {
             let f () =
                 task {
@@ -132,8 +122,11 @@ module Workflows =
                 |> AsyncSeq.tryFind (fun sr -> not (sr.Success))
 
             let result =
-                { FeatureResult = featureResult
-                  StepError = stepError }
+                match (featureResult, stepError) with
+                | (Ok _, Some (StepResult.Failed f)) -> Error(WorkflowFailure.StepFailure f)
+                | (Error e, _) -> Error(FeatureFailure e)
+                | (_, _) -> Ok()
+
 
             return result
 
@@ -148,14 +141,14 @@ module Workflows =
             return
                 match result with
                 | Result.Ok _ -> StepResult.Done
-                | Result.Error e -> StepResult.Error e
+                | Result.Error e -> StepResult.Failed(StepFailure.InvalidOperation e)
         }
 
     let tryIfSuccess m f =
         async {
             let h =
                 match m with
-                | FeatureResult.Ok a -> g (f a)
+                | Result.Ok a -> g (f a)
                 | _ -> async { return StepResult.Skipped }
 
             let! result = Async.Catch h
@@ -163,5 +156,5 @@ module Workflows =
             return
                 match result with
                 | Choice1Of2 sr -> sr
-                | Choice2Of2 ex -> StepResult.Exception ex
+                | Choice2Of2 ex -> StepResult.Failed(StepFailure.Exception ex)
         }

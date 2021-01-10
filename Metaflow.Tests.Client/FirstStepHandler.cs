@@ -1,13 +1,14 @@
 using System.Threading.Tasks;
+using Microsoft.FSharp.Core;
 
 namespace Metaflow.Tests.Client
 {
     public class FirstStepHandler : IStepHandler<SampleModel>
     {
-        public async Task<StepResult> Call(RequestContext ctx,
-            FeatureResult<SampleModel> result)
+        public Task<StepResult> Call(RequestContext ctx,
+            FSharpResult<FSharpOption<SampleModel>, FeatureFailure> result)
         {
-            return StepResult.Done;
+            return Task.FromResult(StepResult.Done);
         }
     }
 }

@@ -10,7 +10,7 @@ open Serilog
 
 type IFeatureClientGrain =
     inherit IGrainWithStringKey
-    abstract Delete<'model> : string * bool -> Task<WorkflowResult<'model>>
+    abstract Delete<'model> : string * bool -> Task<Result<unit, WorkflowFailure>>
 
 type FeatureClient(clusterClient: IClusterClient) =
     member this.Delete<'model>(aggregateRootId: string, awaitState: bool) =
@@ -37,12 +37,7 @@ type FeatureClientGrain(clusterClient: IClusterClient, workflows: Workflow seq) 
 
                 return!
                     match workflowOption with
-                    | None ->
-                        task {
-                            return
-                                { FeatureResult = NotFound
-                                  StepError = None }
-                        }
+                    | None -> task { return Error(WorkflowFailure.FeatureFailure(FeatureFailure.NotFound)) }
                     | Some workflow ->
                         let call =
                             { Feature = workflow.Feature

@@ -62,37 +62,45 @@ type Feature =
         $"{op}{this.Model.Name}V{this.Version}"
 
 
-type Success<'T> =
-    { Version: int
-      Before: 'T option
-      After: 'T option
-      RequestId: string
-      Feature: string
-      Operation: Operation }
 
-type Nonsuccess<'T> =
-    { Version: int
-      RequestId: string
-      Message: string
-      Feature: string
-      Operation: Operation }
 
 type UnitType = unit
 
+
+type RequestContext = { RequestId: string }
+
+[<Struct>]
+type StepFailure =
+    | InvalidOperation of Error: string
+    | Exception of Exception: Exception
+
+type StepResult =
+    | Done
+    | Skipped
+    | Failed of StepFailure
+    member this.Success =
+        match this with
+        | Done -> true
+        | _ -> false
+
 [<Serializable>]
-type FeatureResult<'model> =
-    | Ok of 'model option
+[<Struct>]
+type FeatureFailure =
     | NotFound
-    | RequestError of string
-    | ServerError of Exception
+    | RequestError of Error: string
+    | ServerError of Exception: Exception
 
-
+[<Serializable>]
+[<Struct>]
+type WorkflowFailure =
+    | StepFailure of StepFailureValue: StepFailure
+    | FeatureFailure of FeatureFailureValue: FeatureFailure
 
 [<Serializable>]
 type FeatureOutput<'op, 'model> =
     | Done of 'model option
     | Rejected of string
-    | Failed of Exception
+    | Exception of Exception
     | Ignored of string
 
     member this.Name(feature: Feature) =
@@ -158,17 +166,19 @@ type FeatureCall<'input> =
 
     member this.Id =
         $"ftr:{this.Feature.Name}:{this.ModelId}"
-        
-        
+
+
 type Step =
-        { Name: string
-          Handler: Type
-          Workflow: string
-          Background: bool }
+    { Name: string
+      Handler: Type
+      Workflow: string
+      Background: bool }
+
 type Workflow =
-        { Name: string
-          Feature: Feature
-          Steps: Step list }
+    { Name: string
+      Feature: Feature
+      Steps: Step list }
+
 type FeatureHandler<'op, 'model, 'input> =
     { Workflow: Workflow
       Handler: FeatureInput<'input> -> Async<FeatureOutput<'op, 'model>> }

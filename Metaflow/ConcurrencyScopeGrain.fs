@@ -2,7 +2,6 @@ namespace Metaflow
 
 open Metaflow
 open Orleans
-open System.Threading.Tasks
 open FSharp.Control.Tasks
 
 

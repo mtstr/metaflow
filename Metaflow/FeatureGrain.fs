@@ -2,7 +2,6 @@ namespace Metaflow
 
 open Metaflow
 open Orleans
-open System.Threading.Tasks
 open FSharp.Control.Tasks
 open Microsoft.Extensions.Logging
 open EventStore.Client
@@ -52,9 +51,9 @@ type FeatureGrain<'op, 'model, 'input>(eventStore: EventStoreClient,
                 let result =
                     match (featureOutput, saveResult) with
                     | (Done m, Result.Ok _) -> Ok m
-                    | (_, Result.Error ex) -> ServerError ex
-                    | (Rejected r, Result.Ok _) -> RequestError r
-                    | (Failed ex, Result.Ok _) -> ServerError ex
+                    | (_, Result.Error ex) -> Error (ServerError ex)
+                    | (Rejected r, Result.Ok _) -> Error (RequestError r)
+                    | (Exception ex, Result.Ok _) -> Error (ServerError ex)
                     | (Ignored _, Result.Ok _) -> Ok None
 
                 return result

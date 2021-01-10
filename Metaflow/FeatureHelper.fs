@@ -1,8 +1,5 @@
 namespace Metaflow
 
-open Orleans
-open FSharp.Control.Tasks
-open Workflows
 
 module FeatureHelper =
 

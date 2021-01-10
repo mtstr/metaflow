@@ -5,9 +5,9 @@ open Orleans
 
 type IFeatureGrain<'op, 'model, 'input> =
     inherit IGrainWithStringKey
-    abstract Call: FeatureCall<'input> -> Task<FeatureResult<'model>>
+    abstract Call: FeatureCall<'input> -> Task<Result<'model option, FeatureFailure>>
 
 
 type IConcurrencyScopeGrain =
     inherit IGrainWithStringKey
-    abstract Execute<'op, 'model, 'input> : FeatureCall<'input> -> Task<FeatureResult<'model>>
+    abstract Execute<'op, 'model, 'input> : FeatureCall<'input> -> Task<Result<'model option, FeatureFailure>>
