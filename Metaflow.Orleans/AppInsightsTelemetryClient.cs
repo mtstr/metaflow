@@ -14,7 +14,7 @@ namespace Metaflow.Orleans
             _telemetry = telemetry;
         }
 
-        public void TrackEvents<TResource, TInput>(string id, IEnumerable<object> events)
+        public void TrackEvents<TOwner,TResource, TInput>(string id, IEnumerable<object> events)
         {
             foreach (var @event in events)
             {
@@ -37,7 +37,7 @@ namespace Metaflow.Orleans
                     telemetry["success"] = "true";
                 }
 
-                _telemetry.TrackEvent(@event.Name<TResource, TInput>(), telemetry);
+                _telemetry.TrackEvent(@event.Name<TOwner,TResource, TInput>(), telemetry);
             }
         }
 

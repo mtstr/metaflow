@@ -122,7 +122,7 @@ namespace Metaflow.Orleans
 
             try
             {
-                var events = await HandleEvent<TResource, TInput>(request, input);
+                var events = await HandleEvent<T,TResource, TInput>(request, input);
                 var success = !events.Any(e => e is Rejected<TInput>);
                 return success ? Result.Ok(events) : Result.Nok(events);
             }
@@ -139,7 +139,7 @@ namespace Metaflow.Orleans
             return request == MutationRequest.POST && input is T;
         }
 
-        private async Task<IEnumerable<object>> HandleEvent<TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<IEnumerable<object>> HandleEvent<TOwner,TResource, TInput>(MutationRequest request, TInput input)
         {
             var reception = new Received<TInput>(request, typeof(TResource).Name, input);
 
@@ -170,7 +170,7 @@ namespace Metaflow.Orleans
 
             await Persist<TResource, TInput>(handleEvent);
 
-            _telemetry.TrackEvents<TResource, TInput>(GrainId(), handleEvent);
+            _telemetry.TrackEvents<TOwner, TResource, TInput>(GrainId(), handleEvent);
 
             return handleEvent;
         }
@@ -264,7 +264,7 @@ namespace Metaflow.Orleans
 
         private Task Persist<TResource, TInput>(IEnumerable<object> events)
         {
-            return Persist(events.Select(e => new EventDto() { Name = e.Name<TResource, TInput>(), Event = e }));
+            return Persist(events.Select(e => new EventDto() { Name = e.Name<T, TResource, TInput>(), Event = e }));
         }
 
         private Task Persist(EventDto e)

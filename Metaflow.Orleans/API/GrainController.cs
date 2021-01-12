@@ -19,11 +19,11 @@ namespace Metaflow.Orleans
             _clusterClient = clusterClient;
         }
 
-        private Func<TState, Result, IActionResult> defaultResponder = (state, result) => result.OK ? new OkObjectResult(state) : (IActionResult)new BadRequestObjectResult(result.Error);
+        protected Func<TState, Result, IActionResult> Response = (state, result) => result.OK ? new OkObjectResult(state) : (IActionResult)new BadRequestObjectResult(new { result.Error, result.Events });
 
         protected virtual Task<IActionResult> ProcessRequest<TInput>(
             string id, MutationRequest type, TInput input,
-            CancellationToken cancellationToken) => ProcessRequest(id, type, input, defaultResponder, cancellationToken);
+            CancellationToken cancellationToken) => ProcessRequest(id, type, input, Response, cancellationToken);
 
         protected virtual async Task<IActionResult> ProcessRequest<TInput>(
             string id, MutationRequest type, TInput input,

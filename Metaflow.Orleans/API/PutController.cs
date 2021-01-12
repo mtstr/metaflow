@@ -55,7 +55,7 @@ namespace Metaflow.Orleans
 
                     var state = await grain.Get();
 
-                    return result.OK ? Ok(state) : (IActionResult)BadRequest(result.Error);
+                    return Response(state,result);
 
                 }
             }

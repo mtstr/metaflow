@@ -18,9 +18,11 @@ namespace Metaflow.Orleans
         [HttpDelete("{id}")]
         public virtual async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
         {
-            var result = await GetGrain(id).Delete();
+            var grain = GetGrain(id);
+            var state = await grain.Get();
+            var result = await grain.Delete();
 
-            return result.OK ? NoContent() : (IActionResult)BadRequest(result.Error);
+            return Response(state, result);
         }
     }
 
