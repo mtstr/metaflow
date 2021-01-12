@@ -122,7 +122,7 @@ namespace Metaflow.Orleans
 
             try
             {
-                var events = await HandleEvent<T,TResource, TInput>(request, input);
+                var events = await HandleEvent<T, TResource, TInput>(request, input);
                 var success = !events.Any(e => e is Rejected<TInput>);
                 return success ? Result.Ok(events) : Result.Nok(events);
             }
@@ -139,8 +139,10 @@ namespace Metaflow.Orleans
             return request == MutationRequest.POST && input is T;
         }
 
-        private async Task<IEnumerable<object>> HandleEvent<TOwner,TResource, TInput>(MutationRequest request, TInput input)
+        private async Task<IEnumerable<object>> HandleEvent<TOwner, TResource, TInput>(MutationRequest request, TInput input)
         {
+            if (ModelVersion() == -1) throw new InvalidOperationException("Event restore failed");
+
             var reception = new Received<TInput>(request, typeof(TResource).Name, input);
 
             await Persist(new EventDto() { Name = $"Received:{typeof(TInput).Name}", Event = reception });
@@ -312,6 +314,7 @@ namespace Metaflow.Orleans
                     catch (Exception ex)
                     {
                         _logger.LogCritical(5004, ex, ex.Message);
+                        return new KeyValuePair<int, GrainState<T>>(-1, new GrainState<T>());
                     }
                 }
             }

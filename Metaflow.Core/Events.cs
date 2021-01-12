@@ -87,6 +87,14 @@ namespace Metaflow
         public string Reason { get; }
 
         [JsonConstructor]
+        public Rejected(string request, string resource, TInput input, string reason)
+        {
+            Request = request;
+            ResourceType = resource;
+            Input = input;
+            Reason = reason;
+        }
+
         public Rejected(MutationRequest request, string resource, TInput input, string reason)
         {
             Request = request.ToString();
@@ -104,6 +112,14 @@ namespace Metaflow
         public string Exception { get; }
 
         [JsonConstructor]
+        public Failed(string request, string resource, TInput input, string exception)
+        {
+            Request = request;
+            ResourceType = resource;
+            Input = input;
+            Exception = exception;
+        }
+
         public Failed(MutationRequest request, string resource, TInput input, string exception)
         {
             Request = request.ToString();
@@ -120,10 +136,17 @@ namespace Metaflow
 
         public TInput Input { get; }
 
-        [JsonConstructor]
         public Received(MutationRequest request, string resourceType, TInput input)
         {
             Request = request.ToString();
+            ResourceType = resourceType;
+            Input = input;
+        }
+
+        [JsonConstructor]
+        public Received(string request, string resourceType, TInput input)
+        {
+            Request = request;
             ResourceType = resourceType;
             Input = input;
         }

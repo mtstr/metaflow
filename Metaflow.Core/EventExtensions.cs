@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Metaflow
 {
@@ -14,7 +15,11 @@ namespace Metaflow
             if (@event is Deleted<TResource>) return $"Deleted:{typeof(TResource).Name}";
             if (@event is Ignored<TInput>) return $"Ignored:{typeof(TInput).Name}";
             if (@event is Replaced<TResource>) return $"Replaced:{typeof(TResource).Name}";
-            throw new Exception($"Expecting event for {typeof(TResource).Name}/{typeof(TInput).Name}, but received {@event.GetType().FullName}");
+
+            if (@event.GetType().GetGenericTypeDefinition() == typeof(Replaced<>))
+                return $"Replaced:{@event.GetType().GetGenericArguments().First().Name}";
+
+            throw new Exception($"Expecting event for {typeof(TOwner).Name}/{typeof(TResource).Name}/{typeof(TInput).Name}, but received {@event.GetType().FullName}");
         }
 
 
