@@ -1,6 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Metaflow.Orleans;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FSharp.Core;
 
 namespace Metaflow.Tests.Client
 {
@@ -19,7 +20,7 @@ namespace Metaflow.Tests.Client
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var result = await _featureClient.Delete<SampleModel>(id, false);
+            FSharpResult<Unit, WorkflowFailure> result = await _featureClient.Delete<SampleModel>(id, false);
 
             if (result.IsOk) return Ok();
             if (result.ErrorValue.IsFeatureFailure)

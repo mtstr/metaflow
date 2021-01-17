@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Features.fs" />
+        <Compile Include="Workflows.fs" />
+        <Compile Include="Features\DeleteRoot.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Metaflow.Contracts\Metaflow.Contracts.fsproj" />
+      <ProjectReference Include="..\Metaflow.Orleans.Grains.Contracts\Metaflow.Orleans.Grains.Contracts.csproj" />
+      <ProjectReference Include="..\Metaflow\Metaflow.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Orleans.Core" Version="3.4.0" />
+      <PackageReference Include="Ply" Version="0.3.1" />
+    </ItemGroup>
+
+</Project>

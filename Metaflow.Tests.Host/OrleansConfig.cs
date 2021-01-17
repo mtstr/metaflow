@@ -1,0 +1,12 @@
+namespace Metaflow.Tests.Host
+{
+    public class OrleansConfig
+    {
+        public string ClusterName { get; set; } = "";
+        public bool Local { get; set; } = true;
+        public string Storage { get; set; } = "";
+
+        public int GatewayPort { get; set; } = 30000;
+        public int SiloPort { get; set; } = 11111;
+    }
+}

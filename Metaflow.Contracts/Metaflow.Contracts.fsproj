@@ -7,7 +7,6 @@
     <Company>Metastore</Company>
     <PackageDescription>Package to with core Metaflow types</PackageDescription>
     <RepositoryUrl>https://github.com/mtstr/metaflow</RepositoryUrl>
-    <AssemblyName>Metaflow.Core</AssemblyName>
     <RootNamespace>Metaflow</RootNamespace>
   </PropertyGroup>
   <ItemGroup>

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -17,22 +18,13 @@ namespace Metaflow.Tests.Host
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
-        {
-        }
-
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment() || env.IsEnvironment("Local"))
-            {
                 app.UseDeveloperExceptionPage();
-            }
             else
-            {
                 app.UseHsts();
-            }
 
             app.UseHttpsRedirection();
 
@@ -44,17 +36,22 @@ namespace Metaflow.Tests.Host
                 ResponseWriter = async (context, report) =>
                 {
                     context.Response.ContentType = "application/json; charset=utf-8";
-                    byte[]? bytes = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(report));
+                    var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(report));
 
                     await context.Response.Body.WriteAsync(bytes);
                 }
             });
 
             app.UseEndpoints(endpoints =>
-                {
-                    endpoints.MapControllers();
-                    endpoints.MapHealthChecks("/hc");
-                });
+            {
+                endpoints.MapControllers();
+                endpoints.MapHealthChecks("/hc");
+            });
+        }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
         }
     }
 }

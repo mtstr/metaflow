@@ -8,15 +8,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.1" NoWarn="NU1605" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.1" NoWarn="NU1605" />
-    <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.4.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Orleans.Clustering.Redis" Version="3.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Metaflow.Config\Metaflow.Config.csproj" />
+    <ProjectReference Include="..\Metaflow.Orleans.Config\Metaflow.Orleans.Config.csproj" />
+    <ProjectReference Include="..\Metaflow.Orleans.Grains\Metaflow.Orleans.Grains.csproj" />
     <ProjectReference Include="..\Metaflow\Metaflow.fsproj" />
   </ItemGroup>
 

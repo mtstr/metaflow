@@ -6,8 +6,8 @@ namespace Metaflow
 {
     public class WorkflowsClientBuilder
     {
-        public IReadOnlyCollection<Assembly> Assemblies => _assemblies.ToList().AsReadOnly();
         private readonly HashSet<Assembly> _assemblies = new();
+        public IReadOnlyCollection<Assembly> Assemblies => _assemblies.ToList().AsReadOnly();
 
         public WorkflowsClientBuilder Add<T>()
         {

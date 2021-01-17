@@ -2,4 +2,7 @@
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;
   &lt;Assembly Path="/usr/local/share/dotnet/packs/Microsoft.NETCore.App.Ref/5.0.0/ref/net5.0/System.Text.Json.dll" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
+	
+	
+	
 	</wpf:ResourceDictionary>

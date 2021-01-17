@@ -27,21 +27,11 @@
     <PackageReference Include="FSharp.Data.JsonSchema" Version="1.0.0" />
     <PackageReference Include="FSharp.UMX" Version="1.0.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Core" Version="3.4.0" />
-    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="3.4.0" />
-    <PackageReference Include="Microsoft.Orleans.OrleansCodeGenerator" Version="3.4.0" />
-    <PackageReference Include="Microsoft.Orleans.EventSourcing" Version="3.4.0" />
-    <PackageReference Include="Microsoft.Orleans.Persistence.AzureStorage" Version="3.4.0" />
-    <PackageReference Include="Orleans.Clustering.Redis" Version="3.0.1" />
-    <PackageReference Include="Orleans.MultiClient" Version="3.3.0" />
-    <PackageReference Include="Orleans.Persistence.Redis" Version="3.0.1" />
+    
     <PackageReference Include="Scrutor" Version="3.3.0" />
   </ItemGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\Metaflow.Core\Metaflow.Core.fsproj" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="..\Metaflow.Contracts\Metaflow.Contracts.fsproj" />
     <ProjectReference Include="..\Metaflow\Metaflow.fsproj" />
   </ItemGroup>
   <ItemGroup>

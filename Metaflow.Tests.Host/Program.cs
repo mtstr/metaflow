@@ -4,24 +4,14 @@ using Metaflow.Tests.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Orleans.CodeGeneration;
+
 // [assembly: KnownAssembly(typeof(Metaflow.Tests.Client.SampleModel))]
 
 namespace Metaflow.Tests.Host
 {
     public class Program
     {
-        private static readonly AutoResetEvent Closing = new AutoResetEvent(false);
-
-        private static void OnExit(object sender, ConsoleCancelEventArgs args)
-        {
-            Closing.Set();
-        }
-
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
+        private static readonly AutoResetEvent Closing = new(false);
 
         public static IHostBuilder CreateHostBuilder(string[] args)
         {
@@ -31,14 +21,23 @@ namespace Metaflow.Tests.Host
                 .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
                 .ConfigureAppConfiguration((_, config) => config
                     .AddEnvironmentVariables()
-                    .AddUserSecrets<Startup>());
-
-            b.AddMetaflow(cfg =>
-            {
-                cfg.Delete<SampleModel>("sampleAggregate", f: w => w.Then<SampleModel, FirstStepHandler>());
-            });
+                    .AddUserSecrets<Startup>())
+                .UseMetaflow(cfg =>
+                {
+                    cfg.Delete<SampleModel>("sampleAggregate", f: w => w.Then<SampleModel, FirstStepHandler>());
+                });
 
             return b;
+        }
+
+        public static void Main(string[] args)
+        {
+            CreateHostBuilder(args).Build().Run();
+        }
+
+        private static void OnExit(object sender, ConsoleCancelEventArgs args)
+        {
+            Closing.Set();
         }
     }
 }

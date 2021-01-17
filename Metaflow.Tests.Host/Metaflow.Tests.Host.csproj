@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="5.0.0" />
+    <PackageReference Include="Orleans.Clustering.Redis" Version="3.0.1" />
+    <PackageReference Include="Orleans.Persistence.Redis" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>

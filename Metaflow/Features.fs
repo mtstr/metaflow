@@ -1,9 +1,10 @@
 namespace Metaflow
 
 
-module FeatureHelper =
+module Features =
 
 
+    
     let workflow (feature: Feature) =
         { Name = feature.Name
           Feature = feature

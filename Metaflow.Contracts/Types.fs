@@ -2,6 +2,7 @@ namespace Metaflow
 
 
 open System.Threading
+open System.Threading.Tasks
 open Microsoft.FSharp.Reflection
 open System
 
@@ -182,3 +183,14 @@ type Workflow =
 type FeatureHandler<'op, 'model, 'input> =
     { Workflow: Workflow
       Handler: FeatureInput<'input> -> Async<FeatureOutput<'op, 'model>> }
+
+type State<'t> = {
+    Value: 't option
+}
+
+type Event = {
+    Operation: Operation
+}
+
+type IStepHandler<'model> =
+    abstract Call: RequestContext * Result<'model option, FeatureFailure> -> Task<StepResult>
