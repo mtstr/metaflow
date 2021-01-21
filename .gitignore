@@ -368,3 +368,4 @@ FodyWeavers.xsd
 .vscode/settings.json
 Metaflow.Orleans.DefaultHost/appsettings.Local.json
 Metaflow.Orleans.DefaultHost/Properties/launchSettings.json
+dump.rdb
