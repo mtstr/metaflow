@@ -6,26 +6,26 @@ using Microsoft.FSharp.Core;
 using Orleans;
 using Orleans.CodeGeneration;
 
-[assembly: KnownAssembly(typeof(FeatureCall<>))] 
+[assembly: KnownAssembly(typeof(FeatureCall<>))]
 
 namespace Metaflow.Orleans
 {
-    public class FeatureGrain<TOp, TModel, TInput> : Grain, IFeatureGrain<TOp, TModel, TInput>
+    public class FeatureGrain<TOp, TModel> : Grain, IFeatureGrain<TOp, TModel>
     {
         private readonly EventStoreClient _eventStore;
-        private readonly FeatureHandler<TOp, TModel, TInput> _handler;
-        private readonly ILogger<FeatureGrain<TOp, TModel, TInput>> _logger;
+        private readonly IRequires<TModel> _handler;
+        private readonly ILogger<FeatureGrain<TOp, TModel>> _logger;
 
         public FeatureGrain(EventStoreClient eventStore,
-            ILogger<FeatureGrain<TOp, TModel, TInput>> logger,
-            FeatureHandler<TOp, TModel, TInput> handler)
+            ILogger<FeatureGrain<TOp, TModel>> logger,
+            IRequires<TModel> handler)
         {
             _eventStore = eventStore;
             _logger = logger;
             _handler = handler;
         }
 
-        public Task<FSharpResult<FSharpOption<TModel>, FeatureFailure>> Call(FeatureCall<TInput> call)
+        public Task<FSharpResult<Unit, FeatureFailure>> Call(FeatureCall<TModel> call)
         {
             return FeatureExec.execute(call, _handler, _eventStore, _logger);
         }

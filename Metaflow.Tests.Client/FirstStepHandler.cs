@@ -6,7 +6,7 @@ namespace Metaflow.Tests.Client
     public class FirstStepHandler : IStepHandler<SampleModel>
     {
         public Task<StepResult> Call(RequestContext ctx,
-            FSharpResult<FSharpOption<SampleModel>, FeatureFailure> result)
+            FSharpResult<Unit, FeatureFailure> result)
         {
             return Task.FromResult(StepResult.Done);
         }

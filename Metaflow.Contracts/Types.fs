@@ -49,8 +49,8 @@ type Feature =
       ConcurrencyScope: ConcurrencyScope
       Model: Type
       ModelKind: ModelKind
-      RequiredState: Type option
-      RequiredService: Type option
+      //      RequiredState: Type option
+//      RequiredService: Type option
       Version: int }
     member this.Name =
         let titleCase =
@@ -61,7 +61,6 @@ type Feature =
             |> titleCase
 
         $"{op}{this.Model.Name}V{this.Version}"
-
 
 
 
@@ -99,10 +98,9 @@ type WorkflowFailure =
 
 [<Serializable>]
 type FeatureOutput<'op, 'model> =
-    | Done of 'model option
-    | Rejected of string
+    | Done
+    | Rejected
     | Exception of Exception
-    | Ignored of string
 
     member this.Name(feature: Feature) =
         let resource = typeof<'model>.Name
@@ -146,24 +144,24 @@ type ModelId =
         | OwnedValueId { AggregateRootId = rootId } -> rootId
 
 [<Serializable>]
-type FeatureInput<'input> =
+type FeatureInput<'model> =
     | Id of ModelId
-    | IdAndObject of id: ModelId * obj: 'input
+    | IdAndModel of id: ModelId * obj: 'model
 
 [<Serializable>]
-type FeatureCall<'input> =
+type FeatureCall<'model> =
     { Feature: Feature
       AwaitState: bool
-      Input: FeatureInput<'input> }
+      Input: FeatureInput<'model> }
     member this.AggregateRootId =
         match this.Input with
         | Id mid -> mid.GetAggregateRootId()
-        | IdAndObject (mid, _) -> mid.GetAggregateRootId()
+        | IdAndModel (mid, _) -> mid.GetAggregateRootId()
 
     member this.ModelId =
         match this.Input with
         | Id mid -> mid.ToString()
-        | IdAndObject (mid, _) -> mid.ToString()
+        | IdAndModel (mid, _) -> mid.ToString()
 
     member this.Id =
         $"ftr:{this.Feature.Name}:{this.ModelId}"
@@ -180,17 +178,13 @@ type Workflow =
       Feature: Feature
       Steps: Step list }
 
-type FeatureHandler<'op, 'model, 'input> =
-    { Workflow: Workflow
-      Handler: FeatureInput<'input> -> Async<FeatureOutput<'op, 'model>> }
+type State<'t> = { Value: 't option }
 
-type State<'t> = {
-    Value: 't option
-}
-
-type Event = {
-    Operation: Operation
-}
+type Event = { Operation: Operation }
 
 type IStepHandler<'model> =
-    abstract Call: RequestContext * Result<'model option, FeatureFailure> -> Task<StepResult>
+    abstract Call: RequestContext * Result<unit, FeatureFailure> -> Task<StepResult>
+
+
+type IRequires<'model> =
+    abstract Check: FeatureInput<'model> -> Async<bool>

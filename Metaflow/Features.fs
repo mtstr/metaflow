@@ -3,26 +3,24 @@ namespace Metaflow
 
 module Features =
 
-
-    
     let workflow (feature: Feature) =
         { Name = feature.Name
           Feature = feature
           Steps = [] }
 
-    let private step<'a, 'b, 'c, 'step  when 'step :> IStepHandler<'b>> (workflow: FeatureHandler<'a, 'b, 'c>) background =
+    let private step<'b, 'step when 'step :> IStepHandler<'b>> (workflow: Workflow) background =
         { workflow with
-              Workflow =
-                  { workflow.Workflow with
-                        Steps =
-                            { Name = typeof<'step>.Name
-                              Handler = typeof<'step>
-                              Workflow = workflow.Workflow.Name
-                              Background = background }
-                            :: workflow.Workflow.Steps } }
 
-    let andf<'a, 'b, 'c, 'step when 'step :> IStepHandler<'b>> (workflow: FeatureHandler<'a, 'b, 'c>) = step<'a, 'b, 'c, 'step> workflow false
-    let andb<'a, 'b, 'c, 'step  when 'step :> IStepHandler<'b>> (workflow: FeatureHandler<'a, 'b, 'c>) = step<'a, 'b, 'c, 'step> workflow true
+              Steps =
+                  { Name = typeof<'step>.Name
+                    Handler = typeof<'step>
+                    Workflow = workflow.Name
+                    Background = background }
+                  :: workflow.Steps }
+
+    let andf<'b, 'step when 'step :> IStepHandler<'b>> (workflow: Workflow) = step<'b, 'step> workflow false
+
+    let andb<'b, 'step when 'step :> IStepHandler<'b>> (workflow: Workflow) = step<'b, 'step> workflow true
 
     let deleteValueFeature<'m> (aggregate: string) (ver: int) =
 
@@ -30,18 +28,9 @@ module Features =
           ConcurrencyScope = ConcurrencyScope.Aggregate
           Model = typeof<'m>
           ModelKind = ModelKind.OwnedValue aggregate
-          RequiredService = None
-          RequiredState = None
           Version = ver }
-
-    let autoDone<'op, 'm> w: FeatureHandler<'op, 'm, unit> =
-        let h =
-            fun _ -> async { return FeatureOutput<'op, 'm>.Done None }
-
-        { Workflow = w; Handler = h }
 
     let deleteValue<'m> (aggregate: string) (ver: int) =
         (aggregate, ver)
         ||> deleteValueFeature<'m>
         |> workflow
-        |> autoDone<Delete, 'm>

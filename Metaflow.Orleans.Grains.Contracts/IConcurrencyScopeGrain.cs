@@ -6,6 +6,6 @@ namespace Metaflow.Orleans
 {
     public interface IConcurrencyScopeGrain : IGrainWithStringKey
     {
-        Task<FSharpResult<FSharpOption<TModel>, FeatureFailure>> Execute<TOp, TModel, TInput>(FeatureCall<TInput> call);
+        Task<FSharpResult<Unit, FeatureFailure>> Execute<TOp, TModel>(FeatureCall<TModel> call);
     }
 }

@@ -13,7 +13,7 @@ namespace Metaflow.Orleans
             _handler = handler;
         }
 
-        public Task<StepResult> Call(RequestContext ctx, FSharpResult<FSharpOption<TModel>, FeatureFailure> result)
+        public Task<StepResult> Call(RequestContext ctx, FSharpResult<Unit, FeatureFailure> result)
         {
             return _handler.Call(ctx, result);
         }

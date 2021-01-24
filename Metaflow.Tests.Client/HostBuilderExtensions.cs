@@ -28,7 +28,7 @@ namespace Metaflow.Tests.Client
 
                 clientBuilder.ConfigureMetaflow(featuresBuilder);
                 services.AddSingleton<FeatureClient>();
-                
+
                 if (config.Local)
                     clientBuilder.UseLocalhostClustering(config.GatewayPort);
                 else

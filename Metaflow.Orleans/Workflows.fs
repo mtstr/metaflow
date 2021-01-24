@@ -7,11 +7,11 @@ open Metaflow.Workflows
 open FSharp.Control
 
 module Workflows =
-    let executeFeature<'op, 'model, 'input> (call: FeatureCall<'input>) (clusterClient: Orleans.IClusterClient) =
+    let executeFeature<'op, 'model> (call: FeatureCall<'model>) (clusterClient: Orleans.IClusterClient) =
         task {
 
             let featureGrain =
-                clusterClient.GetGrain<IFeatureGrain<'op, 'model, 'input>>(call.Id)
+                clusterClient.GetGrain<IFeatureGrain<'op, 'model>>(call.Id)
 
             let! result = featureGrain.Call(call)
 
@@ -20,7 +20,7 @@ module Workflows =
     let apply<'model> (step: Step)
                       (id: string)
                       rc
-                      (mu: Result<'model option, FeatureFailure>)
+                      (mu: Result<unit, FeatureFailure>)
                       (clusterClient: Orleans.IClusterClient)
                       logger
                       =
@@ -63,8 +63,8 @@ module Workflows =
 
 
 
-    let run<'input, 'op, 'model> workflow
-                                 (call: FeatureCall<'input>)
+    let run<'op, 'model> workflow
+                                 (call: FeatureCall<'model>)
                                  (clusterClient: Orleans.IClusterClient)
                                  requestContext
                                  logger
@@ -73,13 +73,13 @@ module Workflows =
 
             let! featureResult =
                 match call.Feature.ConcurrencyScope with
-                | Feature -> task { return! executeFeature<'op, 'model, 'input> call clusterClient }
+                | Feature -> task { return! executeFeature<'op, 'model> call clusterClient }
                 | _ ->
                     task {
                         let grain =
                             clusterClient.GetGrain<IConcurrencyScopeGrain>($"{call.ModelId}")
 
-                        return! grain.Execute<'op, 'model, 'input>(call)
+                        return! grain.Execute<'op, 'model>(call)
                     }
 
 

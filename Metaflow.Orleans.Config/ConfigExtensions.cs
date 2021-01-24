@@ -12,7 +12,7 @@ namespace Metaflow.Orleans
         public static IClientBuilder ConfigureMetaflow(this IClientBuilder builder,
             Action<WorkflowsClientBuilder> featuresBuilder)
         {
-            builder.ConfigureServices((ctx, services) =>
+            builder.ConfigureServices((_, _) =>
             {
                 var features = new WorkflowsClientBuilder();
                 featuresBuilder(features);
@@ -20,8 +20,8 @@ namespace Metaflow.Orleans
                 builder
                     .ConfigureApplicationParts(parts =>
                     {
-                        parts.AddApplicationPart(typeof(FeatureGrain<,,>).Assembly);
-                        parts.AddApplicationPart(typeof(IFeatureGrain<,,>).Assembly);
+                        parts.AddApplicationPart(typeof(FeatureGrain<,>).Assembly);
+                        parts.AddApplicationPart(typeof(IFeatureGrain<,>).Assembly);
                         foreach (var assembly in features.Assemblies) parts.AddApplicationPart(assembly);
                     });
             });
@@ -35,7 +35,7 @@ namespace Metaflow.Orleans
             var workflowsBuilder = new WorkflowsBuilder();
 
 
-            builder.ConfigureServices((ctx, services) =>
+            builder.ConfigureServices((_, services) =>
                 {
                     workflowsBuilder.Services = services;
                     featuresBuilder(workflowsBuilder);
@@ -66,8 +66,8 @@ namespace Metaflow.Orleans
                 .ConfigureApplicationParts(parts =>
                 {
                     featuresBuilder(workflowsBuilder);
-                    parts.AddApplicationPart(typeof(FeatureGrain<,,>).Assembly);
-                    parts.AddApplicationPart(typeof(IFeatureGrain<,,>).Assembly);
+                    parts.AddApplicationPart(typeof(FeatureGrain<,>).Assembly);
+                    parts.AddApplicationPart(typeof(IFeatureGrain<,>).Assembly);
                     foreach (var assembly in workflowsBuilder.Assemblies) parts.AddApplicationPart(assembly);
                 });
             return builder;

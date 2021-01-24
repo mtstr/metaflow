@@ -10,6 +10,6 @@ namespace Metaflow.Orleans
 
     public interface IStepGrain<TModel> : IGrainWithStringKey
     {
-        Task<StepResult> Call(RequestContext ctx, FSharpResult<FSharpOption<TModel>, FeatureFailure> result);
+        Task<StepResult> Call(RequestContext ctx, FSharpResult<Unit, FeatureFailure> result);
     }
 }

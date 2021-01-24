@@ -13,10 +13,11 @@ namespace Metaflow.Orleans
             _clusterClient = clusterClient;
         }
 
-        public Task<FSharpResult<FSharpOption<TModel>, FeatureFailure>> Execute<TOp, TModel, TInput>(
-            FeatureCall<TInput> call)
+        public Task<FSharpResult<Unit, FeatureFailure>> Execute<TOp, TModel>(
+            FeatureCall<TModel> call)
         {
-            return Workflows.executeFeature<TOp, TModel, TInput>(call, _clusterClient);
+            return Workflows.executeFeature<TOp, TModel>(call, _clusterClient);
         }
     }
 }
+

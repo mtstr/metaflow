@@ -24,7 +24,7 @@ type Delete<'model> =
 
                     task {
                         return!
-                            Metaflow.Orleans.Workflows.run<unit, Delete, 'model>
+                            Metaflow.Orleans.Workflows.run<Delete, 'model>
                                 workflow
                                 call
                                 clusterClient

@@ -4,8 +4,8 @@ using Orleans;
 
 namespace Metaflow.Orleans
 {
-    public interface IFeatureGrain<TOp, TModel, TInput> : IGrainWithStringKey
+    public interface IFeatureGrain<TOp, TModel> : IGrainWithStringKey
     {
-        Task<FSharpResult<FSharpOption<TModel>, FeatureFailure>> Call(FeatureCall<TInput> call);
+        Task<FSharpResult<Unit, FeatureFailure>> Call(FeatureCall<TModel> call);
     }
 }

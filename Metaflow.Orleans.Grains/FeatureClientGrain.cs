@@ -21,7 +21,8 @@ namespace Metaflow.Orleans
             _workflowMap =
                 new FSharpMap<Tuple<string, Operation>, Workflow>(
                     workflows.Select(w =>
-                        Tuple.Create<Tuple<string, Operation>, Workflow>(Tuple.Create<string, Operation>(w.Feature.Model.FullName, w.Feature.Operation), w)));
+                        Tuple.Create(
+                            Tuple.Create(w.Feature.Model.FullName, w.Feature.Operation), w)));
         }
 
         public Task<FSharpResult<Unit, WorkflowFailure>> Delete<TModel>(string id, bool awaitState)

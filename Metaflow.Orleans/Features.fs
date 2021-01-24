@@ -5,23 +5,32 @@ open FSharp.Control.Tasks
 open FSharp.UMX
 
 module FeatureExec =
-    
 
-    let execute call handler eventStore logger =
+
+    let execute (call: FeatureCall<'model>) (prerequisite: IRequires<'model>) eventStore logger =
         task {
-            let! featureOutput = handler.Handler(call.Input)
+            let! featureOutput =
+                try
+                    async {
+                        let! met = prerequisite.Check(call.Input)
+
+                        return
+                            match met with
+                            | true -> Done
+                            | false -> Rejected
+                    }
+                with ex -> async { return Exception ex }
+
 
             let! saveResult =
                 EventSourcing.saveEvent eventStore %($"agg:{call.AggregateRootId}") featureOutput call.Feature logger
 
             let result =
                 match (featureOutput, saveResult) with
-                | (Done m, Result.Ok _) -> Ok m
+                | (Done, Result.Ok _) -> Ok()
                 | (_, Result.Error ex) -> Error(ServerError ex)
-                | (Rejected r, Result.Ok _) -> Error(RequestError r)
+                | (Rejected, Result.Ok _) -> Error(RequestError "Prerequisite not met")
                 | (Exception ex, Result.Ok _) -> Error(ServerError ex)
-                | (Ignored _, Result.Ok _) -> Ok None
 
             return result
         }
-
