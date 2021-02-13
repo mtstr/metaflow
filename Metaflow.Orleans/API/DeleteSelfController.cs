@@ -22,7 +22,7 @@ namespace Metaflow.Orleans
             var state = await grain.Get();
             var result = await grain.Delete();
 
-            return Response(state, result);
+            return Respond(state, result);
         }
     }
 

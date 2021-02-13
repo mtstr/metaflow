@@ -14,33 +14,7 @@ namespace Metaflow.Orleans
             _telemetry = telemetry;
         }
 
-        public void TrackEvents<TOwner,TResource, TInput>(string id, IEnumerable<object> events)
-        {
-            foreach (var @event in events)
-            {
-
-                var telemetry = new Dictionary<string, string>
-                {
-                    ["resource"] = typeof(TResource).Name,
-                    ["input"] = typeof(TInput).Name,
-                    ["resource_id"] = id,
-                    ["correlation_id"] = CorrelationId
-                };
-
-                if (@event is Rejected<TInput> reject)
-                {
-                    telemetry["success"] = "false";
-                    telemetry["reason"] = reject.Reason;
-                }
-                else
-                {
-                    telemetry["success"] = "true";
-                }
-
-                _telemetry.TrackEvent(@event.Name<TOwner,TResource, TInput>(), telemetry);
-            }
-        }
-
+        
         public void TrackException<TResource, TInput>(MutationRequest request, string id, Exception ex)
         {
             _telemetry.TrackException(ex, new Dictionary<string, string>

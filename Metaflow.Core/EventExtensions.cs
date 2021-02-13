@@ -6,22 +6,6 @@ namespace Metaflow
 {
     public static class EventExtensions
     {
-        public static string Name<TOwner, TResource, TInput>(this object @event)
-        {
-            if (@event is Created<TResource>) return $"Created:{typeof(TResource).Name}";
-            if (@event is Created<TOwner>) return $"Created:{typeof(TOwner).Name}";
-            if (@event is Upgraded<TResource>) return $"Upgraded:{typeof(TResource).Name}";
-            if (@event is Rejected<TInput>) return $"Rejected:{typeof(TInput).Name}";
-            if (@event is Deleted<TResource>) return $"Deleted:{typeof(TResource).Name}";
-            if (@event is Ignored<TInput>) return $"Ignored:{typeof(TInput).Name}";
-            if (@event is Replaced<TResource>) return $"Replaced:{typeof(TResource).Name}";
-
-            if (@event.GetType().GetGenericTypeDefinition() == typeof(Replaced<>))
-                return $"Replaced:{@event.GetType().GetGenericArguments().First().Name}";
-
-            throw new Exception($"Expecting event for {typeof(TOwner).Name}/{typeof(TResource).Name}/{typeof(TInput).Name}, but received {@event.GetType().FullName}");
-        }
-
 
         public static IEnumerable<object> Created<T>(this T entity)
         {

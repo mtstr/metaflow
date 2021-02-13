@@ -15,7 +15,7 @@ namespace Metaflow.Orleans
         }
 
         [HttpPatch(DefaultActionConvention.DefaultRoute)]
-        public virtual async Task<IActionResult> Respond(string id, TInput input, CancellationToken cancellationToken)
+        public virtual async Task<IActionResult> Patch(string id, TInput input, CancellationToken cancellationToken)
         {
             IRestfulGrain<TGrain> grain = GetGrain(id);
 
@@ -23,7 +23,7 @@ namespace Metaflow.Orleans
 
             var state = await grain.Get();
 
-            return Response(state,result);
+            return Respond(state,result);
         }
     }
 

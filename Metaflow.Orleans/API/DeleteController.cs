@@ -24,7 +24,7 @@ namespace Metaflow.Orleans
 
             var state = await grain.Get();
 
-            return Response(state,result);
+            return Respond(state,result);
         }
     }
 

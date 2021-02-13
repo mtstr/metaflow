@@ -172,7 +172,6 @@ namespace Metaflow.Orleans
 
             await Persist<TResource, TInput>(handleEvent);
 
-            _telemetry.TrackEvents<TOwner, TResource, TInput>(GrainId(), handleEvent);
 
             return handleEvent;
         }
@@ -266,7 +265,7 @@ namespace Metaflow.Orleans
 
         private Task Persist<TResource, TInput>(IEnumerable<object> events)
         {
-            return Persist(events.Select(e => new EventDto() { Name = e.Name<T, TResource, TInput>(), Event = e }));
+            return Persist(events.Select(e => new EventDto() { Name = _eventSerializer.Name<T, TResource, TInput>(e), Event = e }));
         }
 
         private Task Persist(EventDto e)

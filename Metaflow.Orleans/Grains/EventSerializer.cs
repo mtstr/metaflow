@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 
 namespace Metaflow.Orleans
@@ -14,7 +15,13 @@ namespace Metaflow.Orleans
         {
             var t = pi.PropertyType;
 
-            if (t.IsGenericType && t.GetGenericTypeDefinition()==typeof(FSharpOption<>))
+            var attr = pi.GetCustomAttribute<RestfulResourceAttribute>();
+            if (attr != null)
+            {
+                return attr.ResourceType;
+            }
+
+            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(FSharpOption<>))
             {
                 return t.GetGenericArguments().First();
             }
@@ -24,23 +31,77 @@ namespace Metaflow.Orleans
                 return t.GetGenericArguments().First();
             }
 
-            var attr = pi.GetCustomAttribute<RestfulResourceAttribute>();
-            if (attr != null)
-            {
-                return attr.ResourceType;
-            }
-
             return t;
         }
 
+        private static bool IsEvent<TOwner>(object @event, Type eventType, out string name)
+        {
+            List<Type> ownedTypes = typeof(TOwner).GetProperties().Select(ResolvePropertyType).ToList();
+            var a = @event.GetType().GetGenericArguments().First();
+            if (@event.GetType().GetGenericTypeDefinition() == eventType)
+            {
+
+                if (a == typeof(TOwner) || ownedTypes.Contains(a))
+                {
+                    name = a.Name;
+                    return true;
+                }
+
+                if (a.IsGenericType && a.GetGenericTypeDefinition() == typeof(FSharpList<>))
+                {
+                    var b = a.GetGenericArguments().First();
+                    if (ownedTypes.Contains(b))
+                    {
+                        name = $"{b.Name}[]";
+                        return true;
+                    }
+                }
+            }
+            name = string.Empty;
+            return false;
+        }
+        public string Name<TOwner, TResource, TInput>(object @event)
+        {
+            if (@event is Upgraded<TResource>) return $"Upgraded:{typeof(TResource).Name}";
+            if (@event is Rejected<TInput>) return $"Rejected:{typeof(TInput).Name}";
+            if (@event is Ignored<TInput>) return $"Ignored:{typeof(TInput).Name}";
+
+            if (IsEvent<TOwner>(@event, typeof(Replaced<>), out string n1))
+                return $"Replaced:{n1}";
+
+            if (IsEvent<TOwner>(@event, typeof(Deleted<>), out string n2))
+                return $"Deleted:{n2}";
+
+            if (IsEvent<TOwner>(@event, typeof(Created<>), out string n3))
+                return $"Created:{n3}";
+
+
+            throw new Exception($"Expecting event for {typeof(TOwner).Name}/{typeof(TResource).Name}/{typeof(TInput).Name}, but received {@event.GetType().FullName}");
+        }
+
+        private static Type ResolveDataType(Type type, string dataTypeId)
+        {
+            List<Type> ownedTypes = type.GetProperties().Select(ResolvePropertyType).ToList();
+
+            if (dataTypeId.EndsWith("[]"))
+            {
+                var dataTypeName = dataTypeId.Replace("[]", "");
+                var dataType = ownedTypes.FirstOrDefault(ot => ot.Name == dataTypeName);
+                if (dataType != null) return typeof(FSharpList<>).MakeGenericType(dataType);
+            }
+            else
+            {
+                return ownedTypes.FirstOrDefault(ot => ot.Name == dataTypeId);
+            }
+
+            return null;
+        }
         public object Deserialize(Type type, string eventType, string json)
         {
             string[] split = eventType.Split(":");
             (var action, var data) = (split[0], split[1]);
 
-            List<Type> ownedTypes = type.GetProperties().Select(ResolvePropertyType).ToList();
-
-            var eventDataType = ownedTypes.FirstOrDefault(ot => ot.Name == data);
+            var eventDataType = ResolveDataType(type, data);
 
             var targetType = (action, data) switch
             {
